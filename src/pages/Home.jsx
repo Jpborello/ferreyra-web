@@ -154,10 +154,10 @@ const Home = () => {
                     {/* Logo Section */}
                     <div className="flex items-center gap-3">
                         <div className="border-2 border-[#3D2B1F] rounded-full p-1">
-                            <img src="/logo.jpg" alt="Mercado del Campo" className="h-12 w-12 rounded-full object-cover sepia-[.3]" />
+                            <img src="/logo.jpg" alt="Embutidos Ferreyra" className="h-12 w-12 rounded-full object-cover sepia-[.3]" />
                         </div>
                         <div className="flex flex-col">
-                            <h1 className="text-xl font-serif font-bold tracking-tight leading-none uppercase">Mercado del Campo</h1>
+                            <h1 className="text-xl font-serif font-bold tracking-tight leading-none uppercase">Embutidos Ferreyra</h1>
                             <span className="text-[10px] font-bold tracking-[0.2em] text-[#C99A3A] uppercase mt-0.5">Calidad de Campo</span>
                         </div>
                     </div>
@@ -312,7 +312,7 @@ const Home = () => {
                             "Nacimos entre el campo y la tradición. Cada corte, cada embutido, lleva el tiempo, el sabor y el oficio de generaciones."
                         </p>
                         <p className="text-[#3D2B1F]/70 mb-8 leading-loose font-medium">
-                            En Mercado del Campo, no solo procesamos alimentos; honramos el trabajo de nuestra tierra. Mantenemos la calidad y frescura para ofrecer un producto que se distingue en el primer bocado.
+                            En Embutidos Ferreyra, no solo procesamos alimentos; honramos el trabajo de nuestra tierra. Mantenemos la calidad y frescura para ofrecer un producto que se distingue en el primer bocado.
                         </p>
                         <img src="/signature.png" alt="Firma Familia" className="h-16 opacity-60" onError={(e) => e.target.style.display = 'none'} />
                     </div>
@@ -518,7 +518,7 @@ const Home = () => {
                 <div className="max-w-7xl mx-auto px-4 relative z-10">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-center md:text-left">
                         <div className="flex flex-col items-center md:items-start">
-                            <h4 className="text-2xl font-serif font-bold mb-6 text-[#C99A3A]">Mercado del Campo</h4>
+                            <h4 className="text-2xl font-serif font-bold mb-6 text-[#C99A3A]">Embutidos Ferreyra</h4>
                             <p className="text-[#F3E6D0]/70 mb-6 font-light leading-relaxed max-w-xs">
                                 Tradición familiar al servicio de la gastronomía. Calidad constante, sabor auténtico.
                             </p>
@@ -550,7 +550,7 @@ const Home = () => {
                             </a>
                             <p className="text-[#F3E6D0]/50 text-sm mb-6">Rosario, Santa Fe</p>
                             <div className="text-xs text-[#F3E6D0]/30 uppercase tracking-widest">
-                                © 2024 Mercado Premium
+                                © 2024 Embutidos Ferreyra
                             </div>
                         </div>
                     </div>
