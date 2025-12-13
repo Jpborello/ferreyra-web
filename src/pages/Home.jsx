@@ -640,6 +640,19 @@ const CheckoutModal = ({ isOpen, onClose, cart, total, clearCart }) => {
         notes: ''
     });
 
+    // Load customer data from LocalStorage on mount
+    useEffect(() => {
+        const savedData = localStorage.getItem('ferreyra_customer');
+        if (savedData) {
+            try {
+                const parsed = JSON.parse(savedData);
+                setFormData(prev => ({ ...prev, ...parsed }));
+            } catch (e) {
+                console.error("Error loading saved customer data", e);
+            }
+        }
+    }, []);
+
     if (!isOpen) return null;
 
     const handleSubmit = async (e) => {
@@ -647,16 +660,16 @@ const CheckoutModal = ({ isOpen, onClose, cart, total, clearCart }) => {
         setLoading(true);
 
         try {
-            // 0. Get Restaurant ID (Critical for visibility in Admin)
-            const { data: restaurant, error: restError } = await supabase
-                .from('restaurants')
-                .select('id')
-                .eq('slug', 'ferreyra-carnes')
-                .single();
+            // 1. Save to LocalStorage for future visits
+            localStorage.setItem('ferreyra_customer', JSON.stringify({
+                businessName: formData.businessName,
+                cuit: formData.cuit,
+                address: formData.address,
+                city: formData.city,
+                phone: formData.phone
+            }));
 
-            if (restError || !restaurant) throw new Error("Error connecting to restaurant system");
-
-            // 1. Manage Customer (Check if exists first to avoid 400 on conflict if unique constraint missing)
+            // 2. Manage Customer (Check if exists first to avoid duplicates)
             let customerId = null;
 
             // Try to find by phone
@@ -668,40 +681,42 @@ const CheckoutModal = ({ isOpen, onClose, cart, total, clearCart }) => {
 
             if (existingCust) {
                 customerId = existingCust.id;
-                // Update basic info only, assume schema is rigid (id, name, phone, address maybe?)
-                // If 'address' failed before, and 'metadata' failed now, likely limit to name/phone.
+                // Update basic info
                 await supabase.from('customers').update({
-                    name: formData.businessName
+                    name: formData.businessName,
+                    address: formData.address, // Update default address
+                    city: formData.city,
+                    cuit: formData.cuit
                 }).eq('id', customerId);
             } else {
-                // Insert new - minimal fields
+                // Insert new customer
                 const { data: newCust, error: createError } = await supabase.from('customers').insert({
                     name: formData.businessName,
-                    phone: formData.phone
+                    phone: formData.phone,
+                    address: formData.address,
+                    city: formData.city,
+                    cuit: formData.cuit
                 }).select().single();
 
                 if (createError) throw createError;
                 customerId = newCust.id;
             }
 
-            // 2. Insert Order
+            // 3. Insert Order
             const { error } = await supabase.from('orders').insert({
-                restaurant_id: restaurant.id, // Link to Ferreyra
-                customer_id: customerId, // Link to Customer (if valid FK)
+                customer_id: customerId,
                 customer_name: `${formData.businessName} (${formData.city})`,
                 customer_phone: formData.phone,
-                delivery_address: `${formData.address}, ${formData.city}`, // ADDED: For logistics
-                table_number: 900, // Code for Web Orders
+                delivery_address: `${formData.address}, ${formData.city}`,
                 status: 'pending',
                 total: total,
                 items: cart.map(i => ({
                     id: i.id,
                     name: i.name,
                     price: i.price,
-                    quantity: i.quantity,
-                    comments: ""
+                    quantity: i.quantity
                 })),
-                created_at: new Date().toISOString()
+                notes: formData.cuit ? `CUIT: ${formData.cuit}` : ''
             });
 
             if (error) throw error;
@@ -711,7 +726,6 @@ const CheckoutModal = ({ isOpen, onClose, cart, total, clearCart }) => {
 
         } catch (error) {
             console.error("Order Error Full:", JSON.stringify(error, null, 2));
-            console.error("Form Data:", formData);
             alert(`Error al enviar: ${error.message || JSON.stringify(error)}`);
         } finally {
             setLoading(false);
@@ -791,7 +805,9 @@ const CheckoutModal = ({ isOpen, onClose, cart, total, clearCart }) => {
                                 <div className="bg-[#white] p-4 bg-white/50 rounded-sm border border-[#3D2B1F]/10 mb-4">
                                     <p className="text-sm text-[#3D2B1F]/70 italic flex items-start gap-2">
                                         <Award size={16} className="shrink-0 mt-0.5" />
-                                        Venta exclusiva a comercios. Sus datos serán validados antes de coordinar la entrega.
+                                        <span>
+                                            <b>¡Hola!</b> Verificá que tus datos estén correctos antes de enviar el pedido. Podés editarlos si es necesario.
+                                        </span>
                                     </p>
                                 </div>
 
@@ -834,12 +850,12 @@ const CheckoutModal = ({ isOpen, onClose, cart, total, clearCart }) => {
                                     </div>
                                 </div>
 
-                                <div className="flex gap-4 pt-6">
-                                    <button type="button" onClick={() => setStep(1)} className="w-1/3 border border-[#3D2B1F]/20 text-[#3D2B1F] py-3 font-bold uppercase tracking-widest hover:bg-[#3D2B1F]/5 transition-colors">
-                                        Volver
+                                <div className="flex gap-4 pt-6 flex-col sm:flex-row">
+                                    <button type="button" onClick={onClose} className="w-full sm:w-1/3 border border-[#3D2B1F]/20 text-[#3D2B1F] py-3 font-bold uppercase tracking-widest hover:bg-[#3D2B1F]/5 transition-colors text-xs sm:text-sm">
+                                        Seguir Comprando
                                     </button>
-                                    <button disabled={loading} type="submit" className="w-2/3 bg-[#3D2B1F] text-[#F3E6D0] py-3 font-bold uppercase tracking-widest hover:bg-[#C99A3A] hover:text-[#3D2B1F] transition-colors flex justify-center items-center gap-2">
-                                        {loading ? <span className="animate-spin w-5 h-5 border-2 border-[#F3E6D0] border-t-transparent rounded-full"></span> : 'Enviar Pedido'}
+                                    <button disabled={loading} type="submit" className="w-full sm:w-2/3 bg-[#3D2B1F] text-[#F3E6D0] py-3 font-bold uppercase tracking-widest hover:bg-[#C99A3A] hover:text-[#3D2B1F] transition-colors flex justify-center items-center gap-2 text-xs sm:text-sm">
+                                        {loading ? <span className="animate-spin w-5 h-5 border-2 border-[#F3E6D0] border-t-transparent rounded-full"></span> : 'Confirmar y Enviar'}
                                     </button>
                                 </div>
                             </form>

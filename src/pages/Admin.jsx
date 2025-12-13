@@ -3,12 +3,12 @@ import { supabase } from '../lib/supabase';
 import {
     LayoutGrid, DollarSign, TrendingUp, Truck, MapPin, Search,
     Package, ArrowRight, MessageCircle, AlertCircle, ShoppingBag,
-    CheckCircle, X, Clock, Lock
+    CheckCircle, X, Clock, Lock, BarChart3, AlertTriangle, Send
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Admin = () => {
-    const [activeTab, setActiveTab] = useState('orders'); // orders, products
+    const [activeTab, setActiveTab] = useState('orders'); // orders, sent, metrics, products
     const [orders, setOrders] = useState([]);
     const [products, setProducts] = useState([]);
     const [selectedOrder, setSelectedOrder] = useState(null);
@@ -18,7 +18,7 @@ const Admin = () => {
 
     const handleLogin = (e) => {
         e.preventDefault();
-        if (passwordInput === '45692278') { // Consider moving to env var or database
+        if (passwordInput === '45692278') {
             setIsAuthenticated(true);
         } else {
             alert('Acceso Denegado');
@@ -26,44 +26,43 @@ const Admin = () => {
     };
 
     // --- Data Fetching ---
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                // 2. Fetch Orders (Tenant Scoped)
-                const { data: oData } = await supabase
-                    .from('orders')
-                    .select('*')
-                    .order('created_at', { ascending: false });
+    const fetchData = async () => {
+        try {
+            // Fetch Orders
+            const { data: oData } = await supabase
+                .from('orders')
+                .select('*')
+                .order('created_at', { ascending: false });
 
-                if (oData) setOrders(oData);
+            if (oData) setOrders(oData);
 
-                // 3. Fetch Products (Tenant Scoped)
-                const { data: pData } = await supabase
-                    .from('products')
-                    .select('id, name, price, category, is_active')
-                    .eq('is_active', true);
+            // Fetch Products
+            const { data: pData } = await supabase
+                .from('products')
+                .select('id, name, price, category, is_active')
+                .eq('is_active', true);
 
-                if (pData) {
-                    const normalized = pData.map(d => ({
-                        ...d,
-                        price: Number(d.price),
-                        category: d.category || 'General'
-                    }));
-                    setProducts(normalized);
-                }
-
-            } catch (error) {
-                console.error("Admin Fetch Error:", error);
-            } finally {
-                setLoading(false);
+            if (pData) {
+                const normalized = pData.map(d => ({
+                    ...d,
+                    price: Number(d.price),
+                    category: d.category || 'General'
+                }));
+                setProducts(normalized);
             }
-        };
 
+        } catch (error) {
+            console.error("Admin Fetch Error:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
         if (isAuthenticated) {
             fetchData();
         }
 
-        // Realtime Subscription
         const channel = supabase
             .channel('admin-dashboard')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
@@ -74,27 +73,73 @@ const Admin = () => {
         return () => supabase.removeChannel(channel);
     }, [isAuthenticated]);
 
-    // --- Metrics ---
+    // --- Actions ---
+    const handleUpdateStatus = async (orderId, newStatus) => {
+        try {
+            const { error } = await supabase
+                .from('orders')
+                .update({ status: newStatus })
+                .eq('id', orderId);
+
+            if (error) throw error;
+
+            // Optimistic update
+            setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+            if (selectedOrder?.id === orderId) {
+                setSelectedOrder(prev => ({ ...prev, status: newStatus }));
+            }
+        } catch (error) {
+            console.error("Error updating status:", error);
+            alert("Error al actualizar estado");
+        }
+    };
+
+    // --- Metrics / Analysis Logic ---
     const getMetrics = () => {
-        const salesMonth = orders.reduce((acc, o) => acc + (o.total || 0), 0);
+        // Sales Stats
+        const salesMonth = orders.reduce((acc, o) => acc + (Number(o.total) || 0), 0);
         const pending = orders.filter(o => o.status === 'pending').length;
         const avgTicket = orders.length ? salesMonth / orders.length : 0;
 
-        return { salesMonth, pending, avgTicket };
+        // Rotation Analysis
+        const productStats = {};
+
+        // Init stats for all active products
+        products.forEach(p => {
+            productStats[p.name] = {
+                id: p.id,
+                name: p.name,
+                category: p.category,
+                price: p.price,
+                soldQty: 0,
+                revenue: 0
+            };
+        });
+
+        // Aggregate sales
+        orders.forEach(order => {
+            if (order.items && Array.isArray(order.items)) {
+                order.items.forEach(item => {
+                    const stats = productStats[item.name]; // Match by name to robustly handle IDs
+                    if (stats) {
+                        stats.soldQty += (item.quantity || 0);
+                        stats.revenue += (item.price * item.quantity || 0);
+                    }
+                });
+            }
+        });
+
+        const statsArray = Object.values(productStats);
+        const bestSellers = [...statsArray].sort((a, b) => b.soldQty - a.soldQty).slice(0, 5);
+        const lowRotation = statsArray.filter(p => p.soldQty === 0);
+
+        return { salesMonth, pending, avgTicket, bestSellers, lowRotation, statsArray };
     };
 
     const metrics = getMetrics();
 
     // --- Helpers ---
     const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 }).format(val);
-
-    const getRecommendation = (prodName) => {
-        const lower = prodName.toLowerCase();
-        if (lower.includes('salame') || lower.includes('chorizo')) return { type: 'offer', text: '💡 Sugerencia: Pack Oferta (-5%)', color: 'text-yellow-400 bg-yellow-400/10' };
-        if (lower.includes('bondiola') || lower.includes('costillar')) return { type: 'ok', text: '✅ Precio Competitivo', color: 'text-emerald-400 bg-emerald-400/10' };
-        if (lower.includes('molleja')) return { type: 'trend', text: '📈 Tendencia Alta (Subir Precio)', color: 'text-purple-400 bg-purple-400/10' };
-        return null;
-    };
 
     const handleWhatsApp = (phone) => {
         if (!phone) return;
@@ -121,10 +166,7 @@ const Admin = () => {
                         className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white mb-4 focus:border-[#C99A3A] focus:outline-none"
                         autoFocus
                     />
-                    <button
-                        type="submit"
-                        className="w-full bg-[#C99A3A] hover:bg-[#b08530] text-slate-900 font-bold py-3 rounded-lg transition-colors uppercase tracking-wider"
-                    >
+                    <button type="submit" className="w-full bg-[#C99A3A] hover:bg-[#b08530] text-slate-900 font-bold py-3 rounded-lg transition-colors uppercase tracking-wider">
                         Ingresar
                     </button>
                 </form>
@@ -132,12 +174,17 @@ const Admin = () => {
         );
     }
 
+    // Filtered Views
+    const pendingOrders = orders.filter(o => o.status === 'pending');
+    const historyOrders = orders.filter(o => o.status !== 'pending');
+    const currentList = activeTab === 'orders' ? pendingOrders : (activeTab === 'sent' ? historyOrders : []);
+
     return (
         <div className="min-h-screen bg-slate-900 text-slate-100 font-sans flex flex-col">
 
             {/* Header */}
-            <header className="bg-slate-950 border-b border-slate-800 px-6 py-4 flex justify-between items-center shadow-md z-10">
-                <div className="flex items-center gap-3">
+            <header className="bg-slate-950 border-b border-slate-800 px-6 py-4 flex flex-col md:flex-row justify-between items-center shadow-md z-10 gap-4">
+                <div className="flex items-center gap-3 w-full md:w-auto">
                     <div className="w-10 h-10 bg-[#C99A3A] rounded-lg flex items-center justify-center text-slate-900 font-bold shadow-lg">
                         <Truck size={20} />
                     </div>
@@ -146,57 +193,64 @@ const Admin = () => {
                         <p className="text-xs text-slate-500">Panel de Control B2B</p>
                     </div>
                 </div>
-                <div className="flex bg-slate-900 p-1 rounded-lg border border-slate-800">
-                    <button onClick={() => setActiveTab('orders')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${activeTab === 'orders' ? 'bg-slate-800 text-white' : 'text-slate-500 hover:text-slate-300'}`}>
-                        Pedidos
+                <div className="flex bg-slate-900 p-1 rounded-lg border border-slate-800 w-full md:w-auto overflow-x-auto">
+                    <button onClick={() => setActiveTab('orders')} className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-bold transition-all flex items-center gap-2 ${activeTab === 'orders' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}>
+                        <ShoppingBag size={16} /> Pendientes ({pendingOrders.length})
                     </button>
-                    <button onClick={() => setActiveTab('products')} className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${activeTab === 'products' ? 'bg-slate-800 text-white' : 'text-slate-500 hover:text-slate-300'}`}>
-                        Productos + IA
+                    <button onClick={() => setActiveTab('sent')} className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-bold transition-all flex items-center gap-2 ${activeTab === 'sent' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}>
+                        <Send size={16} /> Enviados
+                    </button>
+                    <button onClick={() => setActiveTab('metrics')} className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-bold transition-all flex items-center gap-2 ${activeTab === 'metrics' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}>
+                        <TrendingUp size={16} /> Métricas de Rotación
                     </button>
                 </div>
             </header>
+
             {/* Dashboard Content */}
             <div className="flex-1 p-4 md:p-6 overflow-hidden flex flex-col gap-6 relative z-10">
 
-                {/* KPI Cards - Stacked on Mobile */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 shrink-0">
-                    <div className="bg-slate-800 p-4 md:p-6 rounded-xl border border-slate-700 shadow-lg relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
-                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><DollarSign size={48} /></div>
-                        <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Ventas Totales</p>
-                        <h3 className="text-3xl font-black text-white">{formatCurrency(metrics.salesMonth)}</h3>
-                        <div className="h-1 w-full bg-slate-700 mt-4 rounded-full overflow-hidden"><div className="h-full bg-emerald-500 w-[70%]"></div></div>
+                {/* KPI Cards */}
+                {activeTab !== 'metrics' && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 shrink-0">
+                        <div className="bg-slate-800 p-4 md:p-6 rounded-xl border border-slate-700 shadow-lg relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-4 opacity-10"><DollarSign size={48} /></div>
+                            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Ventas Totales</p>
+                            <h3 className="text-3xl font-black text-white">{formatCurrency(metrics.salesMonth)}</h3>
+                        </div>
+                        <div className="bg-slate-800 p-4 md:p-6 rounded-xl border border-slate-700 shadow-lg relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-4 opacity-10"><Package size={48} /></div>
+                            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Pedidos Pendientes</p>
+                            <h3 className={`text-3xl font-black ${metrics.pending > 0 ? 'text-amber-500' : 'text-emerald-500'}`}>{metrics.pending}</h3>
+                        </div>
+                        <div className="bg-slate-800 p-4 md:p-6 rounded-xl border border-slate-700 shadow-lg relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-4 opacity-10"><TrendingUp size={48} /></div>
+                            <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Ticket Promedio</p>
+                            <h3 className="text-3xl font-black text-white">{formatCurrency(metrics.avgTicket)}</h3>
+                        </div>
                     </div>
+                )}
 
-                    <div className="bg-slate-800 p-4 md:p-6 rounded-xl border border-slate-700 shadow-lg relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
-                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><Package size={48} /></div>
-                        <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Pedidos Pendientes</p>
-                        <h3 className="text-3xl font-black text-white">{metrics.pending}</h3>
-                        <div className="h-1 w-full bg-slate-700 mt-4 rounded-full overflow-hidden"><div className="h-full bg-amber-500 w-[40%]"></div></div>
-                    </div>
+                {/* ORDER VIEWS (PENDING & SENT) */}
+                {(activeTab === 'orders' || activeTab === 'sent') && (
+                    <div className="flex-1 bg-slate-800 rounded-xl border border-slate-700 shadow-2xl overflow-hidden flex flex-col md:flex-row">
 
-                    <div className="bg-slate-800 p-4 md:p-6 rounded-xl border border-slate-700 shadow-lg relative overflow-hidden group hover:-translate-y-1 transition-transform duration-300">
-                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity"><TrendingUp size={48} /></div>
-                        <p className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Ticket Promedio</p>
-                        <h3 className="text-3xl font-black text-white">{formatCurrency(metrics.avgTicket)}</h3>
-                        <div className="h-1 w-full bg-slate-700 mt-4 rounded-full overflow-hidden"><div className="h-full bg-blue-500 w-[60%]"></div></div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Main Content Area */}
-            <div className="flex-1 bg-slate-800 rounded-xl border border-slate-700 shadow-2xl overflow-hidden flex flex-col md:flex-row">
-
-                {/* Orders Tab */}
-                {activeTab === 'orders' && (
-                    <>
-                        {/* Inbox List */}
+                        {/* List */}
                         <div className={`${selectedOrder ? 'hidden md:flex' : 'flex'} flex-1 flex-col border-r border-slate-700`}>
-                            <div className="p-4 border-b border-slate-700 bg-slate-800/50 backdrop-blur-sm sticky top-0 z-10 flex justify-between items-center">
-                                <h3 className="font-bold text-slate-200 flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div> Bandeja de Pedidos</h3>
-                                <span className="text-xs text-slate-500">{orders.length} totales</span>
+                            <div className="p-4 border-b border-slate-700 bg-slate-900/50 backdrop-blur-sm sticky top-0 z-10 flex justify-between items-center">
+                                <h3 className="font-bold text-slate-200 flex items-center gap-2">
+                                    {activeTab === 'orders' ? <AlertCircle size={16} className="text-amber-500" /> : <CheckCircle size={16} className="text-emerald-500" />}
+                                    {activeTab === 'orders' ? 'Pedidos Pendientes' : 'Historial Enviados'}
+                                </h3>
+                                <span className="text-xs text-slate-500">{currentList.length} pedidos</span>
                             </div>
-                            <div className="overflow-y-auto flex-1 bg-slate-800">
-                                <div className="overflow-x-auto w-full">
+
+                            {currentList.length === 0 ? (
+                                <div className="flex-1 flex flex-col items-center justify-center text-slate-600 p-8">
+                                    <Package size={48} className="mb-4 opacity-20" />
+                                    <p>No hay pedidos en esta sección.</p>
+                                </div>
+                            ) : (
+                                <div className="overflow-y-auto flex-1 bg-slate-800">
                                     <table className="w-full text-left border-collapse">
                                         <thead className="bg-slate-900/50 text-slate-400 text-[10px] uppercase font-bold sticky top-0">
                                             <tr>
@@ -207,7 +261,7 @@ const Admin = () => {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-700/50 text-sm">
-                                            {orders.map(order => (
+                                            {currentList.map(order => (
                                                 <tr
                                                     key={order.id}
                                                     onClick={() => setSelectedOrder(order)}
@@ -226,7 +280,7 @@ const Admin = () => {
                                                         <div className="text-xs text-slate-500">{order.customer_phone || 'S/T'}</div>
                                                     </td>
                                                     <td className="p-3 hidden sm:table-cell text-slate-400 whitespace-nowrap">
-                                                        <div className="flex items-center gap-1"><MapPin size={12} /> {order.customer_name?.match(/\((.*?)\)/)?.[1] || 'Rosario'}</div>
+                                                        <div className="flex items-center gap-1"><MapPin size={12} /> {order.delivery_address ? order.delivery_address.split(',')[1] : 'Rosario'}</div>
                                                     </td>
                                                     <td className="p-3 text-right font-mono font-medium text-[#C99A3A] whitespace-nowrap">
                                                         {formatCurrency(order.total)}
@@ -236,7 +290,7 @@ const Admin = () => {
                                         </tbody>
                                     </table>
                                 </div>
-                            </div>
+                            )}
                         </div>
 
                         {/* Detail Panel */}
@@ -247,11 +301,11 @@ const Admin = () => {
                                     initial={{ opacity: 0, x: 20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: 20 }}
-                                    className="w-full md:w-[450px] bg-slate-900 flex flex-col h-full absolute md:relative z-20"
+                                    className="w-full md:w-[450px] bg-slate-900 flex flex-col h-full absolute md:relative z-20 shadow-2xl"
                                 >
                                     <div className="p-6 border-b border-slate-800 bg-slate-950 flex justify-between items-start">
                                         <div>
-                                            <h2 className="text-xl font-bold text-white mb-1">Pedido #{selectedOrder.id}</h2>
+                                            <h2 className="text-xl font-bold text-white mb-1">Pedido</h2>
                                             <p className="text-slate-400 text-sm flex items-center gap-2">
                                                 <Clock size={14} /> {new Date(selectedOrder.created_at).toLocaleString()}
                                             </p>
@@ -266,12 +320,49 @@ const Admin = () => {
                                             <div className="space-y-2">
                                                 <div className="flex justify-between">
                                                     <span className="text-slate-400 text-sm">Comercio:</span>
-                                                    <span className="font-bold text-slate-200 text-right">{selectedOrder.customer_name}</span>
+                                                    <span className="font-bold text-slate-200 text-right">{selectedOrder.customer_name?.split('(')[0]}</span>
                                                 </div>
-                                                <div className="flex justify-between">
+                                                <div className="flex justify-between items-start">
+                                                    <span className="text-slate-400 text-sm">Dirección:</span>
+                                                    <span className="font-medium text-slate-200 text-right max-w-[200px] text-sm">
+                                                        {selectedOrder.delivery_address || 'Retira en local'}
+                                                    </span>
+                                                </div>
+
+                                                {/* Embedded Map */}
+                                                {selectedOrder.delivery_address && (
+                                                    <div className="mt-4 rounded-lg overflow-hidden border border-slate-700 shadow-inner h-40 bg-slate-900 relative group">
+                                                        <iframe
+                                                            width="100%"
+                                                            height="100%"
+                                                            frameBorder="0"
+                                                            scrolling="no"
+                                                            marginHeight="0"
+                                                            marginWidth="0"
+                                                            src={`https://maps.google.com/maps?q=${encodeURIComponent(selectedOrder.delivery_address + ', Santa Fe, Argentina')}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
+                                                            className="opacity-80 group-hover:opacity-100 transition-opacity"
+                                                        ></iframe>
+                                                        <a
+                                                            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedOrder.delivery_address + ', Santa Fe, Argentina')}`}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className="absolute bottom-2 right-2 bg-slate-900/80 text-xs text-white px-2 py-1 rounded hover:bg-[#C99A3A] hover:text-slate-900 transition-colors flex items-center gap-1"
+                                                        >
+                                                            <MapPin size={10} /> Ampliar
+                                                        </a>
+                                                    </div>
+                                                )}
+
+                                                <div className="flex justify-between pt-2">
                                                     <span className="text-slate-400 text-sm">Teléfono:</span>
                                                     <span className="font-mono text-[#C99A3A] text-right">{selectedOrder.customer_phone}</span>
                                                 </div>
+                                                {selectedOrder.notes && (
+                                                    <div className="pt-2 border-t border-slate-700 mt-2">
+                                                        <span className="text-slate-400 text-xs block mb-1">Notas / CUIT:</span>
+                                                        <span className="text-slate-300 text-sm italic">"{selectedOrder.notes}"</span>
+                                                    </div>
+                                                )}
                                             </div>
                                             <button
                                                 onClick={() => handleWhatsApp(selectedOrder.customer_phone)}
@@ -291,7 +382,6 @@ const Admin = () => {
                                                             <span className="font-bold text-slate-300 w-6">{item.quantity}x</span>
                                                             <div>
                                                                 <p className="text-slate-200 font-medium">{item.name}</p>
-                                                                <p className="text-[10px] text-slate-500 capitalize">{item.category || 'Embutidos'}</p>
                                                             </div>
                                                         </div>
                                                         <div className="font-mono text-slate-400 text-sm">
@@ -304,10 +394,6 @@ const Admin = () => {
 
                                         {/* Summary */}
                                         <div className="pt-4 border-t border-slate-700">
-                                            <div className="flex justify-between items-baseline mb-2">
-                                                <span className="text-slate-400">Subtotal</span>
-                                                <span className="text-slate-300">{formatCurrency(selectedOrder.total)}</span>
-                                            </div>
                                             <div className="flex justify-between items-baseline text-xl font-bold text-[#C99A3A]">
                                                 <span>Total</span>
                                                 <span>{formatCurrency(selectedOrder.total)}</span>
@@ -317,55 +403,76 @@ const Admin = () => {
 
                                     <div className="p-4 bg-slate-950 border-t border-slate-800">
                                         {/* Action Buttons */}
-                                        {selectedOrder.status === 'pending' && (
-                                            <button className="w-full bg-[#C99A3A] hover:bg-[#b08530] text-slate-900 py-3 rounded font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors">
+                                        {selectedOrder.status === 'pending' ? (
+                                            <button
+                                                onClick={() => handleUpdateStatus(selectedOrder.id, 'enviado')}
+                                                className="w-full bg-[#C99A3A] hover:bg-[#b08530] text-slate-900 py-3 rounded-md font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors shadow-lg"
+                                            >
                                                 <CheckCircle size={18} /> Marcar como Enviado
                                             </button>
+                                        ) : (
+                                            <div className="text-center text-emerald-500 font-bold uppercase tracking-widest text-sm py-2 border border-emerald-500/30 bg-emerald-500/10 rounded-md">
+                                                ✔ Pedido Enviado
+                                            </div>
                                         )}
                                     </div>
                                 </motion.div>
                             ) : (
                                 <div className="hidden md:flex w-[450px] items-center justify-center text-slate-600 flex-col bg-slate-900 border-l border-slate-800">
                                     <Search size={48} className="mb-4 opacity-20" />
-                                    <p>Selecciona un pedido para ver el detalle</p>
+                                    <p>Selecciona un pedido para ver detalles</p>
                                 </div>
                             )}
                         </AnimatePresence>
-                    </>
+                    </div>
                 )}
 
-                {/* Products Tab */}
-                {activeTab === 'products' && (
-                    <div className="flex-1 overflow-auto p-0">
-                        <table className="w-full text-left">
-                            <thead className="bg-slate-900 text-slate-400 text-xs uppercase font-bold sticky top-0 z-10">
-                                <tr>
-                                    <th className="p-4">Producto</th>
-                                    <th className="p-4">Categoría</th>
-                                    <th className="p-4 text-right">Precio Actual</th>
-                                    <th className="p-4">IA Analysis 🤖</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-700">
-                                {products.map(p => {
-                                    const rec = getRecommendation(p.name);
-                                    return (
-                                        <tr key={p.id} className="hover:bg-slate-700/50 transition-colors">
-                                            <td className="p-4 font-medium text-slate-200">{p.name}</td>
-                                            <td className="p-4 text-slate-400 text-sm capitalize">{p.category}</td>
-                                            <td className="p-4 text-right font-mono text-[#C99A3A]">{formatCurrency(p.price)}</td>
-                                            <td className="p-4">
-                                                {rec && (
-                                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${rec.color.replace('text-', 'border-').replace('bg-', 'border-opacity-20 ')} ${rec.color}`}>
-                                                        {rec.text}
-                                                    </span>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    )
-                                })}
-                            </tbody>
-                        </table>
+                {/* METRICS VIEW (ROTATION) */}
+                {activeTab === 'metrics' && (
+                    <div className="flex-1 overflow-auto p-0 space-y-6">
+
+                        {/* Best Sellers */}
+                        <div className="bg-slate-800 p-6 rounded-xl border border-slate-700">
+                            <h3 className="text-lg font-bold text-emerald-400 mb-6 flex items-center gap-2">
+                                <TrendingUp size={24} /> Productos Más Vendidos (Top 5)
+                            </h3>
+                            <div className="space-y-4">
+                                {metrics.bestSellers.map((p, idx) => (
+                                    <div key={idx} className="relative">
+                                        <div className="flex justify-between text-sm mb-1 z-10 relative">
+                                            <span className="font-bold text-slate-200">{idx + 1}. {p.name}</span>
+                                            <span className="text-emerald-400 font-mono font-bold">{p.soldQty} unid.</span>
+                                        </div>
+                                        <div className="h-2 w-full bg-slate-700 rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-emerald-500 rounded-full"
+                                                style={{ width: `${(p.soldQty / (metrics.bestSellers[0]?.soldQty || 1)) * 100}%` }}
+                                            ></div>
+                                        </div>
+                                    </div>
+                                ))}
+                                {metrics.bestSellers.length === 0 && <p className="text-slate-500 italic">No hay datos de ventas aún.</p>}
+                            </div>
+                        </div>
+
+                        {/* Low Rotation Alert */}
+                        <div className="bg-slate-800 p-6 rounded-xl border border-slate-700">
+                            <h3 className="text-lg font-bold text-red-400 mb-6 flex items-center gap-2">
+                                <AlertTriangle size={24} /> Alerta: Baja Rotación (0 Ventas)
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {metrics.lowRotation.map((p, idx) => (
+                                    <div key={idx} className="bg-slate-900/50 p-4 rounded-lg border border-red-500/20 flex justify-between items-center group hover:bg-red-500/5 transition-colors">
+                                        <div>
+                                            <p className="font-bold text-slate-300 text-sm group-hover:text-red-300 transition-colors">{p.name}</p>
+                                            <p className="text-xs text-slate-500 capitalize">{p.category}</p>
+                                        </div>
+                                        <span className="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded font-bold">Sin Movimiento</span>
+                                    </div>
+                                ))}
+                                {metrics.lowRotation.length === 0 && <p className="text-emerald-500 italic">¡Excelente! Todos los productos tienen movimiento.</p>}
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>
