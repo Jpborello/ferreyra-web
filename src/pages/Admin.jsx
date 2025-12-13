@@ -29,23 +29,10 @@ const Admin = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // 1. Get Restaurant ID
-                const { data: shop, error: shopError } = await supabase
-                    .from('restaurants')
-                    .select('id')
-                    .eq('slug', 'ferreyra-carnes')
-                    .single();
-
-                if (shopError || !shop) {
-                    console.error("Shop not found");
-                    return;
-                }
-
                 // 2. Fetch Orders (Tenant Scoped)
                 const { data: oData } = await supabase
                     .from('orders')
                     .select('*')
-                    .eq('restaurant_id', shop.id)
                     .order('created_at', { ascending: false });
 
                 if (oData) setOrders(oData);
@@ -53,15 +40,14 @@ const Admin = () => {
                 // 3. Fetch Products (Tenant Scoped)
                 const { data: pData } = await supabase
                     .from('products')
-                    .select('*, categories(*)')
-                    .eq('restaurant_id', shop.id)
-                    .eq('is_available', true);
+                    .select('id, name, price, category, is_active')
+                    .eq('is_active', true);
 
                 if (pData) {
                     const normalized = pData.map(d => ({
                         ...d,
                         price: Number(d.price),
-                        category: d.categories?.name || d.category || 'General'
+                        category: d.category || 'General'
                     }));
                     setProducts(normalized);
                 }
@@ -100,7 +86,7 @@ const Admin = () => {
     const metrics = getMetrics();
 
     // --- Helpers ---
-    const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(val);
+    const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 }).format(val);
 
     const getRecommendation = (prodName) => {
         const lower = prodName.toLowerCase();
