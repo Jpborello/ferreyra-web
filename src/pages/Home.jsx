@@ -23,24 +23,11 @@ const Home = () => {
 
     const fetchProducts = async () => {
         try {
-            // 1. Get Restaurant ID
-            const { data: restaurant, error: restError } = await supabase
-                .from('restaurants')
-                .select('id')
-                .eq('slug', 'ferreyra-carnes') // Keep slug for data loading
-                .single();
-
-            if (restError || !restaurant) {
-                console.error("Restaurant fetch error:", restError);
-                return;
-            }
-
-            // 2. Fetch Products for this Restaurant
+            // 2. Fetch Products
             const { data, error } = await supabase
                 .from('products')
-                .select('*, categories(*)') // Fetch relation
-                .eq('restaurant_id', restaurant.id)
-                .eq('is_available', true);
+                .select('id, name, price, category, image_url, is_active')
+                .eq('is_active', true);
 
             if (error) {
                 console.error("Supabase error:", error);
@@ -50,7 +37,7 @@ const Home = () => {
                     price: Number(d.price),
                     // Handle category relation vs flatted string. 
                     // If categories is an object (joined), use its name. Fallback to existing logic if it was a direct column.
-                    category: d.categories?.name || d.category || 'Varios'
+                    category: d.category || 'Varios'
                 }));
                 setProducts(normalized);
             }
@@ -100,7 +87,7 @@ const Home = () => {
     };
 
     const formatPrice = (price) => {
-        return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(price);
+        return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 }).format(price);
     };
 
     // Sub-components
@@ -140,6 +127,45 @@ const Home = () => {
             </div>
         );
     };
+
+    const ProductCard = ({ product }) => (
+        <motion.div
+            layout
+            className="group bg-[#F3E6D0] border border-[#3D2B1F]/20 hover:border-[#3D2B1F] hover:shadow-[8px_8px_0px_0px_rgba(61,43,31,0.1)] transition-all duration-300 flex flex-col"
+        >
+            <div className="relative h-64 overflow-hidden border-b border-[#3D2B1F]/10 bg-white">
+                <div className="absolute top-3 right-3 z-10">
+                    <div className="bg-[#5B6236] text-white text-[10px] font-bold px-2 py-1 uppercase tracking-wider">Mayorista</div>
+                </div>
+
+                <img
+                    src={product.image_url || "/placeholder.jpg"}
+                    alt={product.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 sepia-[.1]"
+                    onError={(e) => { e.target.onerror = null; e.target.src = "/placeholder.jpg"; }}
+                />
+            </div>
+
+            <div className="p-6 flex-1 flex flex-col">
+                <h3 className="text-xl font-serif font-bold text-[#3D2B1F] mb-2 leading-snug">{product.name}</h3>
+                <p className="text-sm text-[#3D2B1F]/60 mb-6 font-medium leading-relaxed flex-grow border-b border-[#3D2B1F]/10 pb-4 border-dashed">
+                    {product.category}
+                </p>
+
+                <div className="mt-auto">
+                    <div className="flex items-baseline justify-between mb-4">
+                        <span className="text-[10px] uppercase font-bold text-[#3D2B1F]/50 tracking-wider">Precio x {product.unit || 'Kg'}</span>
+                        <span className="text-2xl font-serif font-bold text-[#C99A3A]">{formatPrice(product.price)}</span>
+                    </div>
+
+                    <ProductQuantityControl
+                        product={product}
+                        currentQty={cart.find(c => c.id === product.id)?.quantity || 0}
+                    />
+                </div>
+            </div>
+        </motion.div>
+    );
 
     return (
         <div className="min-h-screen bg-[#F3E6D0] font-sans text-[#3D2B1F] selection:bg-[#C99A3A] selection:text-[#3D2B1F]">
@@ -352,93 +378,126 @@ const Home = () => {
                         <p className="text-[#5B6236] font-bold uppercase tracking-[0.2em] text-sm">Selección de Campo</p>
                     </div>
 
-                    {/* Featured Products Manual Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-                        {[
-                            { name: "Salamines Caseros", img: "/prod-salamin.png", desc: "Receta tradicional de la familia" },
-                            { name: "Chorizos Puro Cerdo", img: "/prod-chorizo.png", desc: "Elaboración diaria artesanal" },
-                            { name: "Medias Reses", img: "/prod-pork.png", desc: "Faena propia, frescura garantizada" },
-                            { name: "Bondiola Curada", img: "/prod-bondiola.png", desc: "Maduración lenta en bodega" }
-                        ].map((item, index) => (
-                            <motion.div
-                                key={index}
-                                whileHover={{ y: -5 }}
-                                className="bg-white p-3 shadow-lg border border-[#3D2B1F]/10 transform transition-all"
-                            >
-                                <div className="h-64 overflow-hidden mb-4 relative group">
-                                    <img src={item.img} alt={item.name} className="w-full h-full object-cover sepia-[.15] group-hover:scale-110 transition-transform duration-700" />
-                                    <div className="absolute top-2 left-2 bg-[#C99A3A] text-[#3D2B1F] text-[10px] font-bold px-2 py-1 uppercase tracking-widest">
-                                        Destacado
-                                    </div>
-                                </div>
-                                <h4 className="font-serif font-bold text-[#3D2B1F] text-lg text-center mb-1">{item.name}</h4>
-                                <p className="text-center text-[#3D2B1F]/60 text-xs italic">{item.desc}</p>
-                            </motion.div>
-                        ))}
-                    </div>
 
-                    {/* Filters */}
-                    <div className="flex flex-wrap justify-center gap-4 mb-16">
-                        {categories.map(cat => (
-                            <button
-                                key={cat}
-                                onClick={() => setCategoryFilter(cat)}
-                                className={`px-8 py-3 text-sm font-bold uppercase tracking-widest transition-all border-2 ${categoryFilter === cat
-                                    ? 'bg-[#3D2B1F] border-[#3D2B1F] text-[#F3E6D0]'
-                                    : 'bg-transparent border-[#3D2B1F]/20 text-[#3D2B1F] hover:border-[#3D2B1F]'
-                                    }`}
-                            >
-                                {cat === 'all' ? 'Todo' : cat}
-                            </button>
-                        ))}
-                    </div>
 
                     {loading ? (
                         <div className="flex justify-center py-24">
                             <div className="w-12 h-12 border-4 border-[#3D2B1F] border-t-transparent rounded-full animate-spin"></div>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                            {filteredProducts.map((product) => (
-                                <motion.div
-                                    key={product.id}
-                                    layout
-                                    className="group bg-[#F3E6D0] border border-[#3D2B1F]/20 hover:border-[#3D2B1F] hover:shadow-[8px_8px_0px_0px_rgba(61,43,31,0.1)] transition-all duration-300 flex flex-col"
-                                >
-                                    <div className="relative h-64 overflow-hidden border-b border-[#3D2B1F]/10 bg-white">
-                                        <div className="absolute top-3 right-3 z-10">
-                                            <div className="bg-[#5B6236] text-white text-[10px] font-bold px-2 py-1 uppercase tracking-wider">Mayorista</div>
-                                        </div>
-
-                                        {product.image_url ? (
-                                            <img src={product.image_url} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 sepia-[.1]" />
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-[#3D2B1F]/20">
-                                                <ShoppingBag size={48} strokeWidth={1} />
-                                            </div>
-                                        )}
+                        <div>
+                            {/* CATEGORY SELECTION VIEW */}
+                            {categoryFilter === 'all' && (
+                                <div className="space-y-8">
+                                    <div className="text-center mb-12">
+                                        <h3 className="text-3xl font-serif font-bold text-[#3D2B1F] mb-4">¿Qué estás buscando hoy?</h3>
+                                        <p className="text-[#3D2B1F]/60 italic">Seleccioná una categoría para ver nuestros cortes y productos.</p>
                                     </div>
 
-                                    <div className="p-6 flex-1 flex flex-col">
-                                        <h3 className="text-xl font-serif font-bold text-[#3D2B1F] mb-2 leading-snug">{product.name}</h3>
-                                        <p className="text-sm text-[#3D2B1F]/60 mb-6 font-medium leading-relaxed flex-grow border-b border-[#3D2B1F]/10 pb-4 border-dashed">
-                                            {product.description || "Elaboración propia con recetas tradicionales."}
-                                        </p>
-
-                                        <div className="mt-auto">
-                                            <div className="flex items-baseline justify-between mb-4">
-                                                <span className="text-[10px] uppercase font-bold text-[#3D2B1F]/50 tracking-wider">Precio x {product.unit || 'Kg'}</span>
-                                                <span className="text-2xl font-serif font-bold text-[#C99A3A]">{formatPrice(product.price)}</span>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+                                        {/* Avicola Card */}
+                                        <div
+                                            onClick={() => setCategoryFilter('avicola')}
+                                            className="group relative h-80 rounded-sm overflow-hidden cursor-pointer shadow-lg border-2 border-[#3D2B1F]/10 hover:border-[#C99A3A] transition-all"
+                                        >
+                                            <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all z-10"></div>
+                                            <img src="/cat-chicken.jpg" onError={(e) => e.target.src = '/placeholder.jpg'} alt="Avicola" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-6 text-center">
+                                                <h3 className="text-4xl font-serif font-bold text-[#F3E6D0] mb-2 drop-shadow-md group-hover:translate-y-[-5px] transition-transform">Línea Avícola</h3>
+                                                <p className="text-[#C99A3A] font-bold uppercase tracking-widest text-sm opacity-0 group-hover:opacity-100 transition-opacity translate-y-4 group-hover:translate-y-0">Ver Productos</p>
                                             </div>
+                                        </div>
 
-                                            <ProductQuantityControl
-                                                product={product}
-                                                currentQty={cart.find(c => c.id === product.id)?.quantity || 0}
-                                            />
+                                        {/* Vacuna Card */}
+                                        <div
+                                            onClick={() => setCategoryFilter('vacuna')}
+                                            className="group relative h-80 rounded-sm overflow-hidden cursor-pointer shadow-lg border-2 border-[#3D2B1F]/10 hover:border-[#C99A3A] transition-all"
+                                        >
+                                            <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all z-10"></div>
+                                            <img src="/cat-meat.jpg" onError={(e) => e.target.src = '/placeholder.jpg'} alt="Vacuna" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-6 text-center">
+                                                <h3 className="text-4xl font-serif font-bold text-[#F3E6D0] mb-2 drop-shadow-md group-hover:translate-y-[-5px] transition-transform">Ternera & Novillo</h3>
+                                                <p className="text-[#C99A3A] font-bold uppercase tracking-widest text-sm opacity-0 group-hover:opacity-100 transition-opacity translate-y-4 group-hover:translate-y-0">Ver Productos</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Cerdo Card */}
+                                        <div
+                                            onClick={() => setCategoryFilter('cerdo')}
+                                            className="group relative h-80 rounded-sm overflow-hidden cursor-pointer shadow-lg border-2 border-[#3D2B1F]/10 hover:border-[#C99A3A] transition-all"
+                                        >
+                                            <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all z-10"></div>
+                                            <img src="/cat-pork.jpg" onError={(e) => e.target.src = '/placeholder.jpg'} alt="Cerdo" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-6 text-center">
+                                                <h3 className="text-4xl font-serif font-bold text-[#F3E6D0] mb-2 drop-shadow-md group-hover:translate-y-[-5px] transition-transform">Cerdo Premium</h3>
+                                                <p className="text-[#C99A3A] font-bold uppercase tracking-widest text-sm opacity-0 group-hover:opacity-100 transition-opacity translate-y-4 group-hover:translate-y-0">Ver Productos</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Huevos Card */}
+                                        <div
+                                            onClick={() => setCategoryFilter('huevo')}
+                                            className="group relative h-80 rounded-sm overflow-hidden cursor-pointer shadow-lg border-2 border-[#3D2B1F]/10 hover:border-[#C99A3A] transition-all"
+                                        >
+                                            <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all z-10"></div>
+                                            <img src="/cat-eggs.jpg" onError={(e) => e.target.src = '/placeholder.jpg'} alt="Huevos" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-6 text-center">
+                                                <h3 className="text-4xl font-serif font-bold text-[#F3E6D0] mb-2 drop-shadow-md group-hover:translate-y-[-5px] transition-transform">Huevos de Campo</h3>
+                                                <p className="text-[#C99A3A] font-bold uppercase tracking-widest text-sm opacity-0 group-hover:opacity-100 transition-opacity translate-y-4 group-hover:translate-y-0">Ver Productos</p>
+                                            </div>
                                         </div>
                                     </div>
-                                </motion.div>
-                            ))}
+
+                                    {/* Fallback for others if needed */}
+                                    {products.some(p => !p.category.match(/pollo|vacuna|ternera|cerdo|porcino|huevo/i)) && (
+                                        <div className="text-center mt-8">
+                                            <button
+                                                onClick={() => setCategoryFilter('otros')}
+                                                className="text-[#3D2B1F] underline italic hover:text-[#C99A3A] transition-colors"
+                                            >
+                                                Ver otros productos de despensa
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* PRODUCT GRID VIEW */}
+                            {categoryFilter !== 'all' && (
+                                <div className="space-y-8">
+                                    <div className="flex items-center gap-4 mb-8">
+                                        <button
+                                            onClick={() => setCategoryFilter('all')}
+                                            className="flex items-center gap-2 text-[#3D2B1F] hover:text-[#C99A3A] font-bold uppercase tracking-widest text-sm transition-colors"
+                                        >
+                                            <ChevronRight className="rotate-180" size={20} />
+                                            Volver a Categorías
+                                        </button>
+                                        <div className="h-px bg-[#3D2B1F]/20 flex-grow"></div>
+                                        <h3 className="text-2xl font-serif font-bold text-[#3D2B1F] uppercase">
+                                            {categoryFilter === 'avicola' && 'Línea Avícola'}
+                                            {categoryFilter === 'vacuna' && 'Ternera & Novillo'}
+                                            {categoryFilter === 'cerdo' && 'Cerdo Premium'}
+                                            {categoryFilter === 'huevo' && 'Huevos de Campo'}
+                                            {categoryFilter === 'otros' && 'Despensa y Varios'}
+                                        </h3>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                                        {products.filter(p => {
+                                            const cat = p.category.toLowerCase();
+                                            if (categoryFilter === 'avicola') return cat.includes('pollo');
+                                            if (categoryFilter === 'vacuna') return cat.includes('vacuna') || cat.includes('ternera');
+                                            if (categoryFilter === 'cerdo') return cat.includes('cerdo') || cat.includes('porcino');
+                                            if (categoryFilter === 'huevo') return cat.includes('huevo');
+                                            if (categoryFilter === 'otros') return !cat.match(/pollo|vacuna|ternera|cerdo|porcino|huevo/i);
+                                            return true;
+                                        }).map((product) => (
+                                            <ProductCard key={product.id} product={product} />
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
