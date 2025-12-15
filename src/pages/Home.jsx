@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { ShoppingBag, Phone, MapPin, Truck, Award, Search, Menu, X, ChevronRight, Star, ArrowRight, User, Lock, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import SEO from '../components/SEO';
 
 const Home = () => {
     const [scrolled, setScrolled] = useState(false);
@@ -169,6 +170,7 @@ const Home = () => {
 
     return (
         <div className="min-h-screen bg-[#F3E6D0] font-sans text-[#3D2B1F] selection:bg-[#C99A3A] selection:text-[#3D2B1F]">
+            <SEO />
 
             {/* Kraft Texture Overlay */}
             <div className="fixed inset-0 pointer-events-none opacity-40 mix-blend-multiply z-0" style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/cardboard-flat.png")' }}></div>

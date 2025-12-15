@@ -47,7 +47,7 @@ const Admin = () => {
             // Fetch Products
             const { data: pData } = await supabase
                 .from('products')
-                .select('id, name, price, category, is_active')
+                .select('id, name, price, category, is_active, stock')
                 .order('name');
 
             if (pData) {
@@ -126,6 +126,7 @@ const Admin = () => {
             legacy_id: '',
             name: '',
             price: '',
+            stock: 0,
             category: 'Carne Vacuna',
             is_active: true,
             image_url: ''
@@ -139,6 +140,7 @@ const Admin = () => {
             legacy_id: product.legacy_id || '', // Ensure legacy_id exists in DB
             name: product.name,
             price: product.price,
+            stock: product.stock || 0,
             category: product.category || 'General',
             is_active: product.is_active,
             image_url: product.image_url || ''
@@ -178,6 +180,7 @@ const Admin = () => {
                 legacy_id: editingProduct.legacy_id,
                 name: editingProduct.name,
                 price: parseFloat(editingProduct.price), // Ensure float
+                stock: parseInt(editingProduct.stock) || 0,
                 category: editingProduct.category,
                 is_active: editingProduct.is_active,
                 image_url: imageUrl
@@ -684,6 +687,7 @@ const Admin = () => {
                                                 <p className={`font-bold text-sm ${p.is_active ? 'text-slate-200' : 'text-slate-500 line-through'}`}>{p.name}</p>
                                                 <p className="text-xs text-slate-500 capitalize">{p.category}</p>
                                                 <p className="text-[#C99A3A] font-mono text-sm mt-1">{formatCurrency(p.price)}</p>
+                                                <p className={`text-xs font-bold mt-1 ${p.stock > 0 ? 'text-emerald-400' : 'text-red-400'}`}>Stock: {p.stock || 0}</p>
                                             </div>
                                             <div className="flex gap-2">
                                                 <button
@@ -767,22 +771,35 @@ const Admin = () => {
                                     />
                                 </div>
 
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Precio (Usar punto para decimales)</label>
-                                    <div className="relative">
-                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Precio (Usar punto)</label>
+                                        <div className="relative">
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
+                                            <input
+                                                required
+                                                type="number"
+                                                step="0.01"
+                                                value={editingProduct.price}
+                                                onChange={(e) => setEditingProduct({ ...editingProduct, price: e.target.value })}
+                                                className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 pl-8 pr-4 text-white focus:border-[#C99A3A] focus:outline-none font-mono text-lg"
+                                                placeholder="86277.65"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Stock Disponible</label>
                                         <input
                                             required
                                             type="number"
-                                            step="0.01"
-                                            value={editingProduct.price}
-                                            onChange={(e) => setEditingProduct({ ...editingProduct, price: e.target.value })}
-                                            className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 pl-8 pr-4 text-white focus:border-[#C99A3A] focus:outline-none font-mono text-lg"
-                                            placeholder="86277.65"
+                                            value={editingProduct.stock}
+                                            onChange={(e) => setEditingProduct({ ...editingProduct, stock: e.target.value })}
+                                            className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-4 text-white focus:border-[#C99A3A] focus:outline-none font-mono text-lg"
+                                            placeholder="0"
                                         />
                                     </div>
-                                    <p className="text-[10px] text-slate-500 mt-1">Formato requerido: 0000.00 (Ej: 86277.65)</p>
                                 </div>
+                                <p className="text-[10px] text-slate-500 mt-1">Precio Formato: 0000.00 (Ej: 86277.65)</p>
 
                                 <div>
                                     <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Imagen</label>
