@@ -4,7 +4,7 @@ import { Helmet } from 'react-helmet-async';
 const SEO = ({
     title = 'Ferreyra Embutidos - El Mejor Sabor de Rosario',
     description = 'Venta de carne vacuna, cerdo, pollos, huevos y embutidos de primera calidad en Rosario. Mercado del Campo - Ferreyra Embutidos.',
-    keywords = 'carne, embutidos, rosario, asado, cerdo, pollo, huevos, carniceria, mercado del campo',
+    keywords = 'embutidos rosario, carnes rosario, cerdo rosario, cajon de pollos rosario, huevos rosario, mercado del campo, carniceria rosario, ofertas carne rosario',
     name = 'Ferreyra Embutidos',
     type = 'website'
 }) => {
