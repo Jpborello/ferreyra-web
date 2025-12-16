@@ -7,18 +7,22 @@ const FeaturedCarousel = ({ slides = [] }) => {
     const [direction, setDirection] = useState(0);
 
     useEffect(() => {
+        if (slides.length <= 1) return; // Don't auto-play if 0 or 1 slide
+
         const timer = setInterval(() => {
             nextSlide();
         }, 6000);
         return () => clearInterval(timer);
-    }, [current]);
+    }, [current, slides.length]); // Add updated dependency
 
     const nextSlide = () => {
+        if (!slides.length) return;
         setDirection(1);
         setCurrent((prev) => (prev + 1) % slides.length);
     };
 
     const prevSlide = () => {
+        if (!slides.length) return;
         setDirection(-1);
         setCurrent((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
     };
