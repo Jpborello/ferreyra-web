@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { ShoppingBag, Phone, MapPin, Truck, Award, Search, Menu, X, ChevronRight, Star, ArrowRight, User, Lock, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import FeaturedCarousel from '../components/FeaturedCarousel';
 import SEO from '../components/SEO';
 
 const Home = () => {
@@ -10,6 +11,7 @@ const Home = () => {
     const [categoryFilter, setCategoryFilter] = useState('all');
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [slides, setSlides] = useState([]);
     const [checkoutOpen, setCheckoutOpen] = useState(false);
 
     // Cart State
@@ -19,8 +21,64 @@ const Home = () => {
         const handleScroll = () => setScrolled(window.scrollY > 20);
         window.addEventListener('scroll', handleScroll);
         fetchProducts();
+        fetchSlides();
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
+
+    const fetchSlides = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('slides')
+                .select('*')
+                .eq('active', true)
+                .order('display_order', { ascending: true });
+
+            if (data && data.length > 0) {
+                const mappedSlides = data.map(s => ({
+                    image: s.image_url,
+                    title: s.title,
+                    subtitle: s.subtitle,
+                    tag: s.tag,
+                    action: s.action_text,
+                    onAction: () => {
+                        if (s.action_url) {
+                            if (s.action_url.startsWith('http')) {
+                                window.open(s.action_url, '_blank');
+                            } else if (s.action_url.startsWith('#')) {
+                                // Internal anchor
+                                const id = s.action_url.substring(1);
+                                const el = document.getElementById(id);
+                                if (el) el.scrollIntoView({ behavior: 'smooth' });
+                            } else {
+                                // Maybe category filter? e.g. "category:vacuna"
+                                // simple implementation for now:
+                                console.log("Action:", s.action_url);
+                            }
+                        }
+                    }
+                }));
+                setSlides(mappedSlides);
+            } else {
+                // Fallback Mock Data if table empty
+                setSlides([
+                    {
+                        image: "/hero-rustic.png",
+                        title: "Sabores de Fiesta",
+                        subtitle: "Preparate para compartir los mejores momentos.",
+                        tag: "Especial Fin de Año",
+                        action: "Ver Promociones",
+                        onAction: () => {
+                            const element = document.getElementById('catalog');
+                            if (element) element.scrollIntoView({ behavior: 'smooth' });
+                        }
+                    }
+                ]);
+            }
+        } catch (e) {
+            console.error("Error fetching slides", e);
+        }
+    };
+
 
     const fetchProducts = async () => {
         try {
@@ -371,6 +429,11 @@ const Home = () => {
                 </div>
             </section>
 
+            {/* Featured / Events Carousel */}
+            <section className="relative z-20">
+                <FeaturedCarousel slides={slides} />
+            </section>
+
             {/* Catalog Section */}
             <section id="catalog" className="py-24 bg-[#EBE0C8]/50 relative border-t border-[#3D2B1F]/10">
                 <div className="max-w-7xl mx-auto px-4 relative z-10">
@@ -467,15 +530,48 @@ const Home = () => {
                             {/* PRODUCT GRID VIEW */}
                             {categoryFilter !== 'all' && (
                                 <div className="space-y-8">
-                                    <div className="flex items-center gap-4 mb-8">
+                                    {/* Category Navigation Bar */}
+                                    <div className="flex flex-col md:flex-row items-center gap-4 mb-8 bg-[#F3E6D0] border-b-2 border-[#3D2B1F]/10 pb-4 sticky top-20 z-30 pt-4">
+
+                                        {/* Back Button */}
                                         <button
                                             onClick={() => setCategoryFilter('all')}
-                                            className="flex items-center gap-2 text-[#3D2B1F] hover:text-[#C99A3A] font-bold uppercase tracking-widest text-sm transition-colors"
+                                            className="flex items-center gap-2 text-[#3D2B1F] hover:text-[#C99A3A] font-bold uppercase tracking-widest text-xs transition-colors border border-[#3D2B1F]/20 px-3 py-2 rounded hover:bg-[#3D2B1F] hover:border-[#3D2B1F] whitespace-nowrap"
                                         >
-                                            <ChevronRight className="rotate-180" size={20} />
-                                            Volver a Categorías
+                                            <ChevronRight className="rotate-180" size={16} />
+                                            Volver
                                         </button>
-                                        <div className="h-px bg-[#3D2B1F]/20 flex-grow"></div>
+
+                                        {/* Category Tabs */}
+                                        <div className="flex flex-wrap justify-center gap-2 flex-grow">
+                                            {[
+                                                { id: 'avicola', label: 'Avícola' },
+                                                { id: 'vacuna', label: 'Ternera' },
+                                                { id: 'cerdo', label: 'Cerdo' },
+                                                { id: 'huevo', label: 'Huevos' },
+                                                { id: 'otros', label: 'Despensa' },
+                                            ].map(cat => (
+                                                <button
+                                                    key={cat.id}
+                                                    onClick={() => setCategoryFilter(cat.id)}
+                                                    className={`px-4 py-2 rounded-full text-sm font-bold uppercase tracking-wider transition-all
+                                                        ${categoryFilter === cat.id
+                                                            ? 'bg-[#3D2B1F] text-[#F3E6D0] shadow-md transform scale-105'
+                                                            : 'bg-[#3D2B1F]/5 text-[#3D2B1F] hover:bg-[#C99A3A] hover:text-[#3D2B1F]'
+                                                        }`}
+                                                >
+                                                    {cat.label}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        <p className="text-[10px] text-[#3D2B1F]/60 italic hidden md:block">
+                                            * Imágenes ilustrativas
+                                        </p>
+                                    </div>
+
+                                    {/* Category Title (Optional, as tabs show active) */}
+                                    <div className="text-center md:text-left mb-4">
                                         <h3 className="text-2xl font-serif font-bold text-[#3D2B1F] uppercase">
                                             {categoryFilter === 'avicola' && 'Línea Avícola'}
                                             {categoryFilter === 'vacuna' && 'Ternera & Novillo'}

@@ -4,9 +4,10 @@ import {
     LayoutGrid, DollarSign, TrendingUp, Truck, MapPin, Search,
     Package, ArrowRight, MessageCircle, AlertCircle, ShoppingBag,
     CheckCircle, X, Clock, Lock, BarChart3, AlertTriangle, Send,
-    Plus, Edit, UploadCloud, Trash2, Save
+    Plus, Edit, UploadCloud, Trash2, Save, Image as ImageIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import CarouselManager from '../components/CarouselManager';
 
 const Admin = () => {
     const [activeTab, setActiveTab] = useState('orders'); // orders, sent, metrics, products
@@ -369,6 +370,9 @@ const Admin = () => {
                     <button onClick={() => setActiveTab('products')} className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-bold transition-all flex items-center gap-2 ${activeTab === 'products' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}>
                         <Package size={16} /> Stock
                     </button>
+                    <button onClick={() => setActiveTab('carousel')} className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-bold transition-all flex items-center gap-2 ${activeTab === 'carousel' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}>
+                        <ImageIcon size={16} /> Carrusel
+                    </button>
                 </div>
             </header>
 
@@ -710,6 +714,12 @@ const Admin = () => {
                                 ))}
                             </div>
                         </div>
+                    </div>
+                )}
+                {/* CAROUSEL MANAGEMENT VIEW */}
+                {activeTab === 'carousel' && (
+                    <div className="flex-1 overflow-auto p-0">
+                        <CarouselManager />
                     </div>
                 )}
             </div>
