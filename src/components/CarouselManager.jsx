@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Trash2, Plus, Save, Image as ImageIcon, ToggleLeft, ToggleRight, ArrowUp, ArrowDown } from 'lucide-react';
+import { Trash2, Plus, Save, ToggleLeft, ToggleRight, ArrowUp, ArrowDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import ImageUpload from './ImageUpload';
 
 const CarouselManager = () => {
     const [slides, setSlides] = useState([]);
@@ -41,7 +42,8 @@ const CarouselManager = () => {
     const handleSave = async (e) => {
         e.preventDefault();
         try {
-            if (editingId) {
+            // Fix: Check if it's a new slide (editingId === 'new') or an update
+            if (editingId && editingId !== 'new') {
                 const { error } = await supabase
                     .from('slides')
                     .update(formData)
@@ -115,6 +117,9 @@ const CarouselManager = () => {
         }
     };
 
+    const inputStyle = "w-full p-2 border rounded bg-white text-gray-900 border-gray-300 focus:border-[#C99A3A] focus:ring-1 focus:ring-[#C99A3A] outline-none";
+    const labelStyle = "block text-sm font-bold text-[#3D2B1F] mb-1";
+
     return (
         <div className="bg-white rounded-lg shadow p-6">
             <div className="flex justify-between items-center mb-6">
@@ -139,11 +144,19 @@ const CarouselManager = () => {
                         onSubmit={handleSave}
                         className="bg-[#F3E6D0]/30 p-6 rounded-lg mb-8 border border-[#C99A3A]/30 overflow-hidden"
                     >
+                        <div className="mb-4">
+                            <ImageUpload
+                                onUpload={(url) => setFormData({ ...formData, image_url: url })}
+                                initialImage={formData.image_url}
+                                folder="promos"
+                            />
+                        </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                             <div>
-                                <label className="block text-sm font-bold text-[#3D2B1F] mb-1">Título</label>
+                                <label className={labelStyle}>Título</label>
                                 <input
-                                    className="w-full p-2 border rounded"
+                                    className={inputStyle}
                                     value={formData.title}
                                     onChange={e => setFormData({ ...formData, title: e.target.value })}
                                     placeholder="Ej: Oferta Especial"
@@ -151,51 +164,36 @@ const CarouselManager = () => {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-bold text-[#3D2B1F] mb-1">Subtítulo</label>
+                                <label className={labelStyle}>Subtítulo</label>
                                 <input
-                                    className="w-full p-2 border rounded"
+                                    className={inputStyle}
                                     value={formData.subtitle}
                                     onChange={e => setFormData({ ...formData, subtitle: e.target.value })}
                                     placeholder="Descripción corta..."
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-bold text-[#3D2B1F] mb-1">URL Imagen</label>
-                                <div className="flex gap-2">
-                                    <input
-                                        className="w-full p-2 border rounded"
-                                        value={formData.image_url}
-                                        onChange={e => setFormData({ ...formData, image_url: e.target.value })}
-                                        placeholder="https://..."
-                                        required
-                                    />
-                                    {formData.image_url && (
-                                        <img src={formData.image_url} alt="Preview" className="w-10 h-10 object-cover rounded border" />
-                                    )}
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-bold text-[#3D2B1F] mb-1">Tag (Etiqueta)</label>
+                                <label className={labelStyle}>Tag (Etiqueta)</label>
                                 <input
-                                    className="w-full p-2 border rounded"
+                                    className={inputStyle}
                                     value={formData.tag}
                                     onChange={e => setFormData({ ...formData, tag: e.target.value })}
                                     placeholder="Ej: Nuevo, Promo"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-bold text-[#3D2B1F] mb-1">Texto Botón</label>
+                                <label className={labelStyle}>Texto Botón</label>
                                 <input
-                                    className="w-full p-2 border rounded"
+                                    className={inputStyle}
                                     value={formData.action_text}
                                     onChange={e => setFormData({ ...formData, action_text: e.target.value })}
                                     placeholder="Ej: Ver Más"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-bold text-[#3D2B1F] mb-1">Acción (URL o Función)</label>
+                                <label className={labelStyle}>Acción (URL o Función)</label>
                                 <input
-                                    className="w-full p-2 border rounded"
+                                    className={inputStyle}
                                     value={formData.action_url}
                                     onChange={e => setFormData({ ...formData, action_url: e.target.value })}
                                     placeholder="Ej: #catalog"
@@ -204,7 +202,7 @@ const CarouselManager = () => {
                         </div>
                         <div className="flex items-center gap-4 mb-4">
                             <label className="flex items-center gap-2 cursor-pointer">
-                                <span className="text-sm font-bold text-[#3D2B1F]">Activo:</span>
+                                <span className={labelStyle}>Activo:</span>
                                 <div
                                     onClick={() => setFormData({ ...formData, active: !formData.active })}
                                     className={`w-12 h-6 rounded-full p-1 transition-colors ${formData.active ? 'bg-green-500' : 'bg-gray-400'}`}
