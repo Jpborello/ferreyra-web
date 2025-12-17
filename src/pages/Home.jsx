@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import FeaturedCarousel from '../components/FeaturedCarousel';
 import SEO from '../components/SEO';
 
+import TicketDisplay from '../components/TicketDisplay';
+
 const Home = () => {
     const [scrolled, setScrolled] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -738,7 +740,11 @@ const CheckoutModal = ({ isOpen, onClose, cart, total, clearCart }) => {
         notes: ''
     });
 
-    // Load customer data from LocalStorage on mount
+    // Raffle State
+    const [activeRaffle, setActiveRaffle] = useState(null);
+    const [ticketData, setTicketData] = useState(null);
+
+    // Load customer data & Active Raffle
     useEffect(() => {
         const savedData = localStorage.getItem('ferreyra_customer');
         if (savedData) {
@@ -749,7 +755,14 @@ const CheckoutModal = ({ isOpen, onClose, cart, total, clearCart }) => {
                 console.error("Error loading saved customer data", e);
             }
         }
+
+        fetchActiveRaffle();
     }, []);
+
+    const fetchActiveRaffle = async () => {
+        const { data } = await supabase.from('raffles').select('*').eq('status', 'active').maybeSingle();
+        if (data) setActiveRaffle(data);
+    };
 
     if (!isOpen) return null;
 
@@ -801,7 +814,7 @@ const CheckoutModal = ({ isOpen, onClose, cart, total, clearCart }) => {
             }
 
             // 3. Insert Order
-            const { error } = await supabase.from('orders').insert({
+            const { data: newOrder, error: orderError } = await supabase.from('orders').insert({
                 customer_id: customerId,
                 customer_name: `${formData.businessName} (${formData.city})`,
                 customer_phone: formData.phone,
@@ -815,9 +828,35 @@ const CheckoutModal = ({ isOpen, onClose, cart, total, clearCart }) => {
                     quantity: i.quantity
                 })),
                 notes: formData.cuit ? `CUIT: ${formData.cuit}` : ''
-            });
+            }).select().single();
 
-            if (error) throw error;
+            if (orderError) throw orderError;
+
+            // 4. GENERATE RAFFLE TICKET (If active raffle exists)
+            if (activeRaffle) {
+                try {
+                    // Get current count to generate sequential number
+                    const { count } = await supabase
+                        .from('raffle_tickets')
+                        .select('id', { count: 'exact', head: true })
+                        .eq('raffle_id', activeRaffle.id);
+
+                    const nextNum = String((count || 0) + 1).padStart(3, '0');
+
+                    const { data: ticket } = await supabase.from('raffle_tickets').insert({
+                        raffle_id: activeRaffle.id,
+                        order_id: newOrder.id,
+                        customer_name: formData.businessName,
+                        ticket_number: nextNum
+                    }).select().single();
+
+                    if (ticket) setTicketData({ ...ticket, raffle_title: activeRaffle.title });
+
+                } catch (raffleError) {
+                    console.error("Error generating ticket:", raffleError);
+                    // Don't block order success if ticket fails
+                }
+            }
 
             setStep(3);
             clearCart();
@@ -965,6 +1004,14 @@ const CheckoutModal = ({ isOpen, onClose, cart, total, clearCart }) => {
                                     <CheckCircle size={40} />
                                 </div>
                                 <h3 className="text-3xl font-serif font-bold text-[#3D2B1F] mb-4">¡Pedido Recibido!</h3>
+
+                                {ticketData && (
+                                    <TicketDisplay
+                                        ticketNumber={ticketData.ticket_number}
+                                        raffleTitle={ticketData.raffle_title}
+                                    />
+                                )}
+
                                 <p className="text-[#3D2B1F]/80 mb-8 max-w-md mx-auto">
                                     Muchas gracias por su pedido, <strong>{formData.businessName}</strong>. <br />
                                     Nuestro equipo comercial se contactará al <strong>{formData.phone}</strong> en breve para coordinar el pago y la entrega.

@@ -4,10 +4,11 @@ import {
     LayoutGrid, DollarSign, TrendingUp, Truck, MapPin, Search,
     Package, ArrowRight, MessageCircle, AlertCircle, ShoppingBag,
     CheckCircle, X, Clock, Lock, BarChart3, AlertTriangle, Send,
-    Plus, Edit, UploadCloud, Trash2, Save, Image as ImageIcon
+    Plus, Edit, UploadCloud, Trash2, Save, Image as ImageIcon, Ticket, LogOut // Imported LogOut
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import CarouselManager from '../components/CarouselManager';
+import RaffleManager from '../components/RaffleManager';
 
 const Admin = () => {
     const [activeTab, setActiveTab] = useState('orders'); // orders, sent, metrics, products
@@ -16,8 +17,11 @@ const Admin = () => {
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [emailInput, setEmailInput] = useState('');
     const [passwordInput, setPasswordInput] = useState('');
+    const [loginError, setLoginError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [loadingAuth, setLoadingAuth] = useState(true);
 
     // Product Management State
     const [showProductModal, setShowProductModal] = useState(false);
@@ -25,13 +29,46 @@ const Admin = () => {
     const [uploading, setUploading] = useState(false);
     const [productSearchTerm, setProductSearchTerm] = useState('');
 
-    const handleLogin = (e) => {
+    // --- AUTHENTICATION ---
+    useEffect(() => {
+        // Check active session on mount
+        const checkSession = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            setIsAuthenticated(!!session);
+            setLoadingAuth(false);
+        };
+        checkSession();
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setIsAuthenticated(!!session);
+        });
+
+        return () => subscription.unsubscribe();
+    }, []);
+
+    const handleLogin = async (e) => {
         e.preventDefault();
-        if (passwordInput === '45692278') {
-            setIsAuthenticated(true);
+        setLoginError(null);
+        setLoadingAuth(true);
+
+        const { error } = await supabase.auth.signInWithPassword({
+            email: emailInput,
+            password: passwordInput,
+        });
+
+        if (error) {
+            setLoginError(error.message);
+            setLoadingAuth(false);
         } else {
-            alert('Acceso Denegado');
+            // Success! 
+            // The onAuthStateChange listener updates 'isAuthenticated',
+            // but we must manually turn off the local loading state here.
+            setLoadingAuth(false);
         }
+    };
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
     };
 
     // --- Data Fetching ---
@@ -278,6 +315,10 @@ const Admin = () => {
     };
 
     // --- RENDER ---
+    if (loadingAuth) {
+        return <div className="min-h-screen bg-slate-900 flex items-center justify-center text-[#C99A3A]"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-current"></div></div>;
+    }
+
     if (!isAuthenticated) {
         return (
             <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
@@ -287,17 +328,33 @@ const Admin = () => {
                             <Lock size={32} />
                         </div>
                     </div>
-                    <h2 className="text-2xl font-bold text-center text-[#F3E6D0] mb-6">Acceso Restringido</h2>
+                    <h2 className="text-2xl font-bold text-center text-[#F3E6D0] mb-6">Acceso Administrativo</h2>
+
+                    {loginError && (
+                        <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded text-red-400 text-sm text-center">
+                            {loginError === 'Invalid login credentials' ? 'Credenciales incorrectas' : loginError}
+                        </div>
+                    )}
+
+                    <input
+                        type="email"
+                        placeholder="Email"
+                        value={emailInput}
+                        onChange={(e) => setEmailInput(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white mb-4 focus:border-[#C99A3A] focus:outline-none"
+                        autoFocus
+                        required
+                    />
                     <input
                         type="password"
                         placeholder="Contraseña"
                         value={passwordInput}
                         onChange={(e) => setPasswordInput(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white mb-4 focus:border-[#C99A3A] focus:outline-none"
-                        autoFocus
+                        className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white mb-6 focus:border-[#C99A3A] focus:outline-none"
+                        required
                     />
-                    <button type="submit" className="w-full bg-[#C99A3A] hover:bg-[#b08530] text-slate-900 font-bold py-3 rounded-lg transition-colors uppercase tracking-wider">
-                        Ingresar
+                    <button disabled={loadingAuth} type="submit" className="w-full bg-[#C99A3A] hover:bg-[#b08530] text-slate-900 font-bold py-3 rounded-lg transition-colors uppercase tracking-wider flex justify-center">
+                        {loadingAuth ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-slate-900"></div> : 'Ingresar Seguro'}
                     </button>
                 </form>
             </div>
@@ -341,7 +398,9 @@ const Admin = () => {
                     </div>
                     <div>
                         <h1 className="text-xl font-bold tracking-tight text-[#F3E6D0]">Logística Mercado</h1>
-                        <p className="text-xs text-slate-500">Panel de Control B2B</p>
+                        <p className="text-xs text-slate-500 flex items-center gap-1">
+                            Panel de Control <button onClick={handleLogout} className="text-red-400 hover:text-red-300 ml-2 underline flex items-center gap-1"><LogOut size={10} /> Salir</button>
+                        </p>
                     </div>
                 </div>
 
@@ -372,6 +431,9 @@ const Admin = () => {
                     </button>
                     <button onClick={() => setActiveTab('carousel')} className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-bold transition-all flex items-center gap-2 ${activeTab === 'carousel' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}>
                         <ImageIcon size={16} /> Carrusel
+                    </button>
+                    <button onClick={() => setActiveTab('raffles')} className={`whitespace-nowrap px-4 py-2 rounded-md text-sm font-bold transition-all flex items-center gap-2 ${activeTab === 'raffles' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-500 hover:text-slate-300'}`}>
+                        <Ticket size={16} /> Sorteos
                     </button>
                 </div>
             </header>
@@ -720,6 +782,12 @@ const Admin = () => {
                 {activeTab === 'carousel' && (
                     <div className="flex-1 overflow-auto p-0">
                         <CarouselManager />
+                    </div>
+                )}
+                {/* RAFFLE MANAGEMENT VIEW */}
+                {activeTab === 'raffles' && (
+                    <div className="flex-1 overflow-auto p-0">
+                        <RaffleManager />
                     </div>
                 )}
             </div>
