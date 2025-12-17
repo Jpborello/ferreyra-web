@@ -567,7 +567,7 @@ const Home = () => {
                                             ))}
                                         </div>
 
-                                        <p className="text-[10px] text-[#3D2B1F]/60 italic hidden md:block">
+                                        <p className="text-xs md:text-sm text-[#3D2B1F]/80 italic font-medium hidden md:block">
                                             * Imágenes ilustrativas
                                         </p>
                                     </div>
@@ -708,8 +708,11 @@ const Home = () => {
                                 +54 341 468-9424
                             </a>
                             <p className="text-[#F3E6D0]/50 text-sm mb-6">Rosario, Santa Fe</p>
-                            <div className="text-xs text-[#F3E6D0]/30 uppercase tracking-widest">
-                                © 2024 Embutidos Ferreyra
+                            <div className="text-xs text-[#F3E6D0]/40 uppercase tracking-widest flex flex-col items-center md:items-end gap-1">
+                                <span>© 2025 Embutidos Ferreyra - Todos los derechos reservados.</span>
+                                <span>
+                                    Web creada por <a href="https://neo-core-sys.com/" target="_blank" rel="noopener noreferrer" className="hover:text-[#C99A3A] transition-colors border-b border-[#C99A3A]/30">Neo Core Sys</a>
+                                </span>
                             </div>
                         </div>
                     </div>
