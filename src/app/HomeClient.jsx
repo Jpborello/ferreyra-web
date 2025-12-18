@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import { ShoppingBag, Phone, MapPin, Truck, Award, Search, Menu, X, ChevronRight, Star, ArrowRight, User, Lock, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import FeaturedCarousel from '../components/FeaturedCarousel';
+import CollaborationSection from '../components/CollaborationSection';
 
 import TicketDisplay from '../components/TicketDisplay';
 
@@ -261,6 +262,7 @@ const Home = () => {
                     {/* Desktop Menu */}
                     <div className="hidden md:flex items-center gap-8">
                         <a href="#hero" className="text-sm font-bold uppercase tracking-wider hover:text-[#C99A3A] transition-colors">Inicio</a>
+                        <a href="#oportunidades" className="text-sm font-bold uppercase tracking-wider hover:text-[#C99A3A] transition-colors">Oportunidades</a>
                         <a href="#story" className="text-sm font-bold uppercase tracking-wider hover:text-[#C99A3A] transition-colors">Historia</a>
                         <a href="#catalog" className="text-sm font-bold uppercase tracking-wider hover:text-[#C99A3A] transition-colors">Productos</a>
                         <button
@@ -305,6 +307,7 @@ const Home = () => {
                     >
                         <div className="flex flex-col p-6 gap-4 text-center">
                             <a onClick={() => setMobileMenuOpen(false)} href="#hero" className="font-serif font-bold text-[#3D2B1F] uppercase tracking-widest py-3 border-b border-[#3D2B1F]/10">Inicio</a>
+                            <a onClick={() => setMobileMenuOpen(false)} href="#oportunidades" className="font-serif font-bold text-[#3D2B1F] uppercase tracking-widest py-3 border-b border-[#3D2B1F]/10">Oportunidades</a>
                             <a onClick={() => setMobileMenuOpen(false)} href="#story" className="font-serif font-bold text-[#3D2B1F] uppercase tracking-widest py-3 border-b border-[#3D2B1F]/10">Historia</a>
                             <a onClick={() => setMobileMenuOpen(false)} href="#catalog" className="font-serif font-bold text-[#3D2B1F] uppercase tracking-widest py-3 border-b border-[#3D2B1F]/10">Productos</a>
                             <button onClick={handleOrderClick} className="bg-[#3D2B1F] text-[#F3E6D0] py-4 uppercase font-bold tracking-widest mt-2 w-full">
@@ -708,6 +711,9 @@ const Home = () => {
                     </div>
                 </div>
             </section>
+
+            {/* Collaboration Section */}
+            <CollaborationSection />
 
             {/* Footer - Farm Style */}
             <footer className="bg-[#3D2B1F] text-[#F3E6D0] py-16 pb-48 md:pb-16 relative overflow-hidden border-t-8 border-[#C99A3A]">
