@@ -1,4 +1,6 @@
+"use client";
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Star } from 'lucide-react';
 
@@ -78,10 +80,11 @@ const FeaturedCarousel = ({ slides = [] }) => {
                 >
                     {/* Background Image */}
                     <div className="absolute inset-0">
-                        <img
-                            src={slide.image || '/placeholder.jpg'}
+                        <Image
+                            src={typeof slide.image === 'string' ? slide.image.trim() : '/placeholder.jpg'}
                             alt={slide.title || 'Slide'}
-                            onError={(e) => e.target.src = '/placeholder.jpg'}
+                            fill
+                            priority={current === 0}
                             className="w-full h-full object-cover sepia-[0.3] brightness-75"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-[#3D2B1F] via-[#3D2B1F]/40 to-transparent mix-blend-multiply"></div>

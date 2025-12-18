@@ -1,5 +1,7 @@
+"use client";
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import Image from 'next/image';
+import { supabase } from '../../lib/supabase';
 import {
     LayoutGrid, DollarSign, TrendingUp, Truck, MapPin, Search,
     Package, ArrowRight, MessageCircle, AlertCircle, ShoppingBag,
@@ -7,8 +9,8 @@ import {
     Plus, Edit, UploadCloud, Trash2, Save, Image as ImageIcon, Ticket, LogOut // Imported LogOut
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import CarouselManager from '../components/CarouselManager';
-import RaffleManager from '../components/RaffleManager';
+import CarouselManager from '../../components/CarouselManager';
+import RaffleManager from '../../components/RaffleManager';
 
 const Admin = () => {
     const [activeTab, setActiveTab] = useState('orders'); // orders, sent, metrics, products
@@ -85,7 +87,7 @@ const Admin = () => {
             // Fetch Products
             const { data: pData } = await supabase
                 .from('products')
-                .select('id, name, price, category, is_active, stock')
+                .select('id, name, price, category, is_active, stock, legacy_id, image_url')
                 .order('name');
 
             if (pData) {
@@ -364,7 +366,9 @@ const Admin = () => {
     // Filtered Views
     const pendingOrders = orders.filter(o => o.status === 'pending');
     const historyOrders = orders.filter(o => o.status !== 'pending');
-    const currentList = activeTab === 'orders' ? pendingOrders : (activeTab === 'sent' ? historyOrders : []);
+    const filteredPending = filterList(pendingOrders);
+    const filteredHistory = filterList(historyOrders);
+    const currentList = activeTab === 'orders' ? filteredPending : (activeTab === 'sent' ? filteredHistory : []);
 
     return (
         <div className="min-h-screen bg-slate-900 text-slate-100 font-sans flex flex-col print:bg-white print:text-black">
@@ -398,9 +402,9 @@ const Admin = () => {
                     </div>
                     <div>
                         <h1 className="text-xl font-bold tracking-tight text-[#F3E6D0]">Logística Mercado</h1>
-                        <p className="text-xs text-slate-500 flex items-center gap-1">
+                        <div className="text-xs text-slate-500 flex items-center gap-1">
                             Panel de Control <button onClick={handleLogout} className="text-red-400 hover:text-red-300 ml-2 underline flex items-center gap-1"><LogOut size={10} /> Salir</button>
-                        </p>
+                        </div>
                     </div>
                 </div>
 
@@ -899,11 +903,13 @@ const Admin = () => {
                                             />
                                         </label>
                                         {(editingProduct.image_url || editingProduct.file) && (
-                                            <div className="w-20 h-20 rounded-lg border border-slate-700 overflow-hidden bg-slate-800 shrink-0">
-                                                <img
-                                                    src={editingProduct.file ? URL.createObjectURL(editingProduct.file) : editingProduct.image_url}
+                                            <div className="w-20 h-20 rounded-lg border border-slate-700 overflow-hidden bg-slate-800 shrink-0 relative">
+                                                <Image
+                                                    src={editingProduct.file ? URL.createObjectURL(editingProduct.file) : (typeof editingProduct.image_url === 'string' ? editingProduct.image_url.trim() : "/placeholder.jpg")}
                                                     alt="Preview"
-                                                    className="w-full h-full object-cover"
+                                                    fill
+                                                    unoptimized
+                                                    className="object-cover"
                                                 />
                                             </div>
                                         )}

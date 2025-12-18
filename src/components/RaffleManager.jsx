@@ -1,3 +1,4 @@
+"use client";
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Ticket, Plus, Trophy, Archive, AlertCircle, History } from 'lucide-react';
@@ -124,8 +125,8 @@ const RaffleManager = () => {
                                 key={raffle.id}
                                 onClick={() => { setSelectedRaffle(raffle); setWinner(null); }}
                                 className={`w-full text-left p-3 rounded-lg border transition-all ${selectedRaffle?.id === raffle.id
-                                        ? 'bg-[#C99A3A]/10 border-[#C99A3A] text-[#C99A3A]'
-                                        : 'bg-slate-900/50 border-slate-700 text-slate-300 hover:bg-slate-700'
+                                    ? 'bg-[#C99A3A]/10 border-[#C99A3A] text-[#C99A3A]'
+                                    : 'bg-slate-900/50 border-slate-700 text-slate-300 hover:bg-slate-700'
                                     }`}
                             >
                                 <div className="font-bold">{raffle.title}</div>

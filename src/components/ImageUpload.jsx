@@ -1,4 +1,6 @@
+"use client";
 import React, { useState, useCallback } from 'react';
+import Image from 'next/image';
 import { useDropzone } from 'react-dropzone';
 import { Upload, X, Loader, Image as ImageIcon } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -74,11 +76,13 @@ const ImageUpload = ({ onUpload, initialImage = '', label = 'Imagen', bucket = '
                         <span className="text-sm font-medium">Subiendo...</span>
                     </div>
                 ) : preview ? (
-                    <div className="relative w-full h-full flex items-center justify-center group">
-                        <img
-                            src={preview}
+                    <div className="relative w-full h-full flex items-center justify-center group min-h-[160px]">
+                        <Image
+                            src={typeof preview === 'string' ? preview.trim() : '/placeholder.jpg'}
                             alt="Preview"
-                            className="max-h-[200px] w-full object-contain rounded"
+                            fill
+                            className="object-contain rounded"
+                            unoptimized
                         />
                         <button
                             type="button"
