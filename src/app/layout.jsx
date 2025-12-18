@@ -4,20 +4,26 @@ import { Montserrat, Cormorant_Garamond, Mrs_Saint_Delafield } from 'next/font/g
 const bodyFont = Montserrat({
     subsets: ['latin'],
     variable: '--font-body',
-    weight: ['300', '400', '500', '600', '700']
+    weight: ['300', '400', '500', '600', '700'],
+    display: 'swap',
+    preload: false,
 });
 
 const titleFont = Cormorant_Garamond({
     subsets: ['latin'],
     variable: '--font-title',
     weight: ['400', '700'],
-    style: ['normal', 'italic']
+    style: ['normal', 'italic'],
+    display: 'swap',
+    preload: false,
 });
 
 const signatureFont = Mrs_Saint_Delafield({
     weight: '400',
     subsets: ['latin'],
-    variable: '--font-signature'
+    variable: '--font-signature',
+    display: 'swap',
+    preload: false,
 });
 
 export const metadata = {

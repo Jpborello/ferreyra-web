@@ -244,7 +244,13 @@ const Home = () => {
                     {/* Logo Section */}
                     <div className="flex items-center gap-3">
                         <div className="border-2 border-[#3D2B1F] rounded-full p-1 relative w-14 h-14 overflow-hidden">
-                            <Image src="/logo.jpg" alt="Embutidos Ferreyra" fill className="rounded-full object-cover sepia-[.3]" />
+                            <Image
+                                src="/logo.jpg"
+                                alt="Embutidos Ferreyra"
+                                fill
+                                sizes="(max-width: 768px) 100vw, 56px"
+                                className="rounded-full object-cover sepia-[.3]"
+                            />
                         </div>
                         <div className="flex flex-col">
                             <h1 className="text-xl font-serif font-bold tracking-tight leading-none uppercase">Embutidos Ferreyra</h1>
@@ -310,7 +316,7 @@ const Home = () => {
             </AnimatePresence>
 
             {/* Hero Section - Vintage & Rustic */}
-            <section id="hero" className="relative h-[80vh] flex items-center justify-center overflow-hidden mt-20">
+            <section id="hero" className="relative h-[80vh] flex items-center justify-center overflow-hidden mt-20 mb-20 md:mb-0">
                 <div className="absolute inset-0 z-0">
                     <Image
                         src="/hero-rustic.png"
@@ -384,13 +390,14 @@ const Home = () => {
             {/* Storytelling Section */}
             <section id="story" className="py-24 max-w-7xl mx-auto px-4 relative z-10">
                 <div className="flex flex-col md:flex-row items-center gap-16">
-                    <div className="md:w-1/2 relative h-[400px]">
+                    <div className="md:w-1/2 relative h-[400px] border-none md:border-r md:border-[#3D2B1F]/20 pr-0 md:pr-12">
                         <div className="absolute inset-0 bg-[#C99A3A] transform translate-x-4 translate-y-4"></div>
                         <Image
                             src="/story-rustic.png"
                             alt="Campo Argentino"
                             fill
-                            className="relative z-10 w-full h-full object-cover sepia-[.2] shadow-xl border-2 border-[#3D2B1F]"
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                            className="relative z-10 w-full h-full object-cover sepia-[.2] shadow-xl border-0 md:border-2 border-[#3D2B1F]"
                         />
                     </div>
                     <div className="md:w-1/2">
@@ -401,7 +408,7 @@ const Home = () => {
                         <h3 className="text-4xl md:text-5xl font-serif font-bold text-[#3D2B1F] mb-8 leading-tight">
                             Del Campo a la<br />Mesa de los Argentinos
                         </h3>
-                        <p className="text-lg text-[#3D2B1F]/80 mb-6 font-serif italic leading-relaxed border-l-4 border-[#C99A3A] pl-6">
+                        <p className="text-lg text-[#3D2B1F]/80 mb-6 font-serif italic leading-relaxed border-none md:border-l-4 border-[#C99A3A] pl-0 md:pl-6">
                             "Nacimos entre el campo y la tradición. Cada corte, cada embutido, lleva el tiempo, el sabor y el oficio de generaciones."
                         </p>
                         <p className="text-[#3D2B1F]/70 mb-8 leading-loose font-medium">
@@ -476,7 +483,13 @@ const Home = () => {
                                             className="group relative h-80 rounded-sm overflow-hidden cursor-pointer shadow-lg border-2 border-[#3D2B1F]/10 hover:border-[#C99A3A] transition-all"
                                         >
                                             <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all z-10"></div>
-                                            <Image src="/cat-chicken.jpg" alt="Avicola" fill className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                            <Image
+                                                src="/cat-chicken.jpg"
+                                                alt="Avicola"
+                                                fill
+                                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                            />
                                             <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-6 text-center">
                                                 <h3 className="text-4xl font-serif font-bold text-[#F3E6D0] mb-2 drop-shadow-md group-hover:translate-y-[-5px] transition-transform">Línea Avícola</h3>
                                                 <p className="text-[#C99A3A] font-bold uppercase tracking-widest text-sm opacity-0 group-hover:opacity-100 transition-opacity translate-y-4 group-hover:translate-y-0">Ver Productos</p>
@@ -489,7 +502,13 @@ const Home = () => {
                                             className="group relative h-80 rounded-sm overflow-hidden cursor-pointer shadow-lg border-2 border-[#3D2B1F]/10 hover:border-[#C99A3A] transition-all"
                                         >
                                             <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all z-10"></div>
-                                            <Image src="/cat-meat.jpg" alt="Vacuna" fill className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                            <Image
+                                                src="/cat-meat.jpg"
+                                                alt="Vacuna"
+                                                fill
+                                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                            />
                                             <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-6 text-center">
                                                 <h3 className="text-4xl font-serif font-bold text-[#F3E6D0] mb-2 drop-shadow-md group-hover:translate-y-[-5px] transition-transform">Ternera & Novillo</h3>
                                                 <p className="text-[#C99A3A] font-bold uppercase tracking-widest text-sm opacity-0 group-hover:opacity-100 transition-opacity translate-y-4 group-hover:translate-y-0">Ver Productos</p>
@@ -502,7 +521,13 @@ const Home = () => {
                                             className="group relative h-80 rounded-sm overflow-hidden cursor-pointer shadow-lg border-2 border-[#3D2B1F]/10 hover:border-[#C99A3A] transition-all"
                                         >
                                             <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all z-10"></div>
-                                            <Image src="/cat-pork.jpg" alt="Cerdo" fill className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                            <Image
+                                                src="/cat-pork.jpg"
+                                                alt="Cerdo"
+                                                fill
+                                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                            />
                                             <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-6 text-center">
                                                 <h3 className="text-4xl font-serif font-bold text-[#F3E6D0] mb-2 drop-shadow-md group-hover:translate-y-[-5px] transition-transform">Cerdo Premium</h3>
                                                 <p className="text-[#C99A3A] font-bold uppercase tracking-widest text-sm opacity-0 group-hover:opacity-100 transition-opacity translate-y-4 group-hover:translate-y-0">Ver Productos</p>
@@ -515,7 +540,13 @@ const Home = () => {
                                             className="group relative h-80 rounded-sm overflow-hidden cursor-pointer shadow-lg border-2 border-[#3D2B1F]/10 hover:border-[#C99A3A] transition-all"
                                         >
                                             <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all z-10"></div>
-                                            <Image src="/cat-eggs.jpg" alt="Huevos" fill className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                            <Image
+                                                src="/cat-eggs.jpg"
+                                                alt="Huevos"
+                                                fill
+                                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                            />
                                             <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-6 text-center">
                                                 <h3 className="text-4xl font-serif font-bold text-[#F3E6D0] mb-2 drop-shadow-md group-hover:translate-y-[-5px] transition-transform">Huevos de Campo</h3>
                                                 <p className="text-[#C99A3A] font-bold uppercase tracking-widest text-sm opacity-0 group-hover:opacity-100 transition-opacity translate-y-4 group-hover:translate-y-0">Ver Productos</p>
@@ -618,7 +649,7 @@ const Home = () => {
                         initial={{ y: 100 }}
                         animate={{ y: 0 }}
                         exit={{ y: 100 }}
-                        className="fixed bottom-0 left-0 w-full z-40 bg-[#3D2B1F] text-[#F3E6D0] p-4 shadow-2xl border-t-4 border-[#C99A3A] flex justify-between items-center"
+                        className="fixed bottom-0 left-0 w-full z-40 bg-[#3D2B1F] text-[#F3E6D0] p-4 shadow-2xl border-t-4 border-[#C99A3A] flex flex-col md:flex-row justify-between items-center gap-4 md:gap-0"
                     >
                         <div className="flex flex-col md:flex-row items-baseline gap-2 md:gap-4">
                             <span className="text-sm uppercase tracking-widest text-[#C99A3A]">Su Pedido:</span>
@@ -639,7 +670,7 @@ const Home = () => {
             </AnimatePresence>
 
             {/* Origin & Coverage Section */}
-            <section id="coverage" className="relative h-[60vh] flex items-center justify-center overflow-hidden border-t-8 border-[#C99A3A]">
+            <section id="coverage" className="relative transition-all h-auto py-24 md:py-0 md:h-[60vh] flex items-center justify-center overflow-hidden border-t-8 border-[#C99A3A]">
                 <div className="absolute inset-0 z-0">
                     <Image
                         src="/farm-rustic.png"
@@ -679,7 +710,7 @@ const Home = () => {
             </section>
 
             {/* Footer - Farm Style */}
-            <footer className="bg-[#3D2B1F] text-[#F3E6D0] py-16 relative overflow-hidden border-t-8 border-[#C99A3A]">
+            <footer className="bg-[#3D2B1F] text-[#F3E6D0] py-16 pb-48 md:pb-16 relative overflow-hidden border-t-8 border-[#C99A3A]">
                 {/* Background Illustration overlay (simulated with CSS pattern/gradient) */}
                 <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 50% 120%, #C99A3A 0%, transparent 60%)' }}></div>
 
