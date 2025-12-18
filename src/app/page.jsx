@@ -1,9 +1,10 @@
+"use client";
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { supabase } from '../lib/supabase';
 import { ShoppingBag, Phone, MapPin, Truck, Award, Search, Menu, X, ChevronRight, Star, ArrowRight, User, Lock, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import FeaturedCarousel from '../components/FeaturedCarousel';
-import SEO from '../components/SEO';
 
 import TicketDisplay from '../components/TicketDisplay';
 
@@ -199,11 +200,12 @@ const Home = () => {
                     <div className="bg-[#5B6236] text-white text-[10px] font-bold px-2 py-1 uppercase tracking-wider">Mayorista</div>
                 </div>
 
-                <img
-                    src={product.image_url || "/placeholder.jpg"}
+                <Image
+                    src={typeof product.image_url === 'string' ? product.image_url.trim() : "/placeholder.jpg"}
                     alt={product.name}
+                    width={400}
+                    height={300}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 sepia-[.1]"
-                    onError={(e) => { e.target.onerror = null; e.target.src = "/placeholder.jpg"; }}
                 />
             </div>
 
@@ -230,7 +232,7 @@ const Home = () => {
 
     return (
         <div className="min-h-screen bg-[#F3E6D0] font-sans text-[#3D2B1F] selection:bg-[#C99A3A] selection:text-[#3D2B1F]">
-            <SEO />
+            {/* SEO removed, handled by Next.js metadata */}
 
             {/* Kraft Texture Overlay */}
             <div className="fixed inset-0 pointer-events-none opacity-40 mix-blend-multiply z-0" style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/cardboard-flat.png")' }}></div>
@@ -241,8 +243,8 @@ const Home = () => {
 
                     {/* Logo Section */}
                     <div className="flex items-center gap-3">
-                        <div className="border-2 border-[#3D2B1F] rounded-full p-1">
-                            <img src="/logo.jpg" alt="Embutidos Ferreyra" className="h-12 w-12 rounded-full object-cover sepia-[.3]" />
+                        <div className="border-2 border-[#3D2B1F] rounded-full p-1 relative w-14 h-14 overflow-hidden">
+                            <Image src="/logo.jpg" alt="Embutidos Ferreyra" fill className="rounded-full object-cover sepia-[.3]" />
                         </div>
                         <div className="flex flex-col">
                             <h1 className="text-xl font-serif font-bold tracking-tight leading-none uppercase">Embutidos Ferreyra</h1>
@@ -310,9 +312,11 @@ const Home = () => {
             {/* Hero Section - Vintage & Rustic */}
             <section id="hero" className="relative h-[80vh] flex items-center justify-center overflow-hidden mt-20">
                 <div className="absolute inset-0 z-0">
-                    <img
+                    <Image
                         src="/hero-rustic.png"
                         alt="Background"
+                        fill
+                        priority
                         className="w-full h-full object-cover sepia-[.3] contrast-110"
                     />
                     <div className="absolute inset-0 bg-[#3D2B1F]/60 mix-blend-multiply"></div>
@@ -380,11 +384,12 @@ const Home = () => {
             {/* Storytelling Section */}
             <section id="story" className="py-24 max-w-7xl mx-auto px-4 relative z-10">
                 <div className="flex flex-col md:flex-row items-center gap-16">
-                    <div className="md:w-1/2 relative">
+                    <div className="md:w-1/2 relative h-[400px]">
                         <div className="absolute inset-0 bg-[#C99A3A] transform translate-x-4 translate-y-4"></div>
-                        <img
+                        <Image
                             src="/story-rustic.png"
                             alt="Campo Argentino"
+                            fill
                             className="relative z-10 w-full h-full object-cover sepia-[.2] shadow-xl border-2 border-[#3D2B1F]"
                         />
                     </div>
@@ -402,7 +407,9 @@ const Home = () => {
                         <p className="text-[#3D2B1F]/70 mb-8 leading-loose font-medium">
                             En Embutidos Ferreyra, no solo procesamos alimentos; honramos el trabajo de nuestra tierra. Mantenemos la calidad y frescura para ofrecer un producto que se distingue en el primer bocado.
                         </p>
-                        <img src="/signature.png" alt="Firma Familia" className="h-16 opacity-60" onError={(e) => e.target.style.display = 'none'} />
+                        <p className="font-signature text-6xl md:text-7xl text-[#3D2B1F]/90 mt-4 -rotate-2">
+                            Familia Ferreyra
+                        </p>
                     </div>
                 </div>
             </section>
@@ -412,9 +419,10 @@ const Home = () => {
             {/* Quality Parallax Strip */}
             <section className="relative h-[40vh] flex items-center justify-center overflow-hidden my-12">
                 <div className="absolute inset-0 z-0">
-                    <img
+                    <Image
                         src="/macro-meat.png"
                         alt="Textura Premium"
+                        fill
                         className="w-full h-full object-cover filter brightness-[0.7] sepia-[.1]"
                     />
                     <div className="absolute inset-0 bg-black/20"></div>
@@ -468,7 +476,7 @@ const Home = () => {
                                             className="group relative h-80 rounded-sm overflow-hidden cursor-pointer shadow-lg border-2 border-[#3D2B1F]/10 hover:border-[#C99A3A] transition-all"
                                         >
                                             <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all z-10"></div>
-                                            <img src="/cat-chicken.jpg" onError={(e) => e.target.src = '/placeholder.jpg'} alt="Avicola" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                            <Image src="/cat-chicken.jpg" alt="Avicola" fill className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                                             <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-6 text-center">
                                                 <h3 className="text-4xl font-serif font-bold text-[#F3E6D0] mb-2 drop-shadow-md group-hover:translate-y-[-5px] transition-transform">Línea Avícola</h3>
                                                 <p className="text-[#C99A3A] font-bold uppercase tracking-widest text-sm opacity-0 group-hover:opacity-100 transition-opacity translate-y-4 group-hover:translate-y-0">Ver Productos</p>
@@ -481,7 +489,7 @@ const Home = () => {
                                             className="group relative h-80 rounded-sm overflow-hidden cursor-pointer shadow-lg border-2 border-[#3D2B1F]/10 hover:border-[#C99A3A] transition-all"
                                         >
                                             <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all z-10"></div>
-                                            <img src="/cat-meat.jpg" onError={(e) => e.target.src = '/placeholder.jpg'} alt="Vacuna" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                            <Image src="/cat-meat.jpg" alt="Vacuna" fill className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                                             <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-6 text-center">
                                                 <h3 className="text-4xl font-serif font-bold text-[#F3E6D0] mb-2 drop-shadow-md group-hover:translate-y-[-5px] transition-transform">Ternera & Novillo</h3>
                                                 <p className="text-[#C99A3A] font-bold uppercase tracking-widest text-sm opacity-0 group-hover:opacity-100 transition-opacity translate-y-4 group-hover:translate-y-0">Ver Productos</p>
@@ -494,7 +502,7 @@ const Home = () => {
                                             className="group relative h-80 rounded-sm overflow-hidden cursor-pointer shadow-lg border-2 border-[#3D2B1F]/10 hover:border-[#C99A3A] transition-all"
                                         >
                                             <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all z-10"></div>
-                                            <img src="/cat-pork.jpg" onError={(e) => e.target.src = '/placeholder.jpg'} alt="Cerdo" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                            <Image src="/cat-pork.jpg" alt="Cerdo" fill className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                                             <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-6 text-center">
                                                 <h3 className="text-4xl font-serif font-bold text-[#F3E6D0] mb-2 drop-shadow-md group-hover:translate-y-[-5px] transition-transform">Cerdo Premium</h3>
                                                 <p className="text-[#C99A3A] font-bold uppercase tracking-widest text-sm opacity-0 group-hover:opacity-100 transition-opacity translate-y-4 group-hover:translate-y-0">Ver Productos</p>
@@ -507,7 +515,7 @@ const Home = () => {
                                             className="group relative h-80 rounded-sm overflow-hidden cursor-pointer shadow-lg border-2 border-[#3D2B1F]/10 hover:border-[#C99A3A] transition-all"
                                         >
                                             <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all z-10"></div>
-                                            <img src="/cat-eggs.jpg" onError={(e) => e.target.src = '/placeholder.jpg'} alt="Huevos" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                                            <Image src="/cat-eggs.jpg" alt="Huevos" fill className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                                             <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-6 text-center">
                                                 <h3 className="text-4xl font-serif font-bold text-[#F3E6D0] mb-2 drop-shadow-md group-hover:translate-y-[-5px] transition-transform">Huevos de Campo</h3>
                                                 <p className="text-[#C99A3A] font-bold uppercase tracking-widest text-sm opacity-0 group-hover:opacity-100 transition-opacity translate-y-4 group-hover:translate-y-0">Ver Productos</p>
@@ -633,9 +641,10 @@ const Home = () => {
             {/* Origin & Coverage Section */}
             <section id="coverage" className="relative h-[60vh] flex items-center justify-center overflow-hidden border-t-8 border-[#C99A3A]">
                 <div className="absolute inset-0 z-0">
-                    <img
+                    <Image
                         src="/farm-rustic.png"
                         alt="Campo Argentino"
+                        fill
                         className="w-full h-full object-cover sepia-[.2] contrast-110"
                     />
                     <div className="absolute inset-0 bg-[#3D2B1F]/70 mix-blend-multiply"></div>

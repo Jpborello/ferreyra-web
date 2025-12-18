@@ -1,4 +1,6 @@
+"use client";
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { supabase } from '../lib/supabase';
 import { Trash2, Plus, Save, ToggleLeft, ToggleRight, ArrowUp, ArrowDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -238,8 +240,8 @@ const CarouselManager = () => {
                             <button onClick={() => handleOrderChange(slide.id, -1)} disabled={index === 0} className="hover:text-[#C99A3A] disabled:opacity-30"><ArrowUp size={16} /></button>
                             <button onClick={() => handleOrderChange(slide.id, 1)} disabled={index === slides.length - 1} className="hover:text-[#C99A3A] disabled:opacity-30"><ArrowDown size={16} /></button>
                         </div>
-                        <div className="w-24 h-16 bg-gray-200 rounded overflow-hidden flex-shrink-0">
-                            <img src={slide.image_url} alt={slide.title} className="w-full h-full object-cover" />
+                        <div className="w-24 h-16 bg-gray-200 rounded overflow-hidden flex-shrink-0 relative">
+                            <Image src={typeof slide.image_url === 'string' ? slide.image_url.trim() : '/placeholder.jpg'} alt={slide.title} fill className="object-cover" />
                         </div>
                         <div className="flex-grow">
                             <div className="flex items-center gap-2">
