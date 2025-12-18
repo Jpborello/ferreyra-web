@@ -27,8 +27,52 @@ const signatureFont = Mrs_Saint_Delafield({
 });
 
 export const metadata = {
-    title: 'Embutidos Ferreyra | Calidad de Campo',
-    description: 'Tradición familiar al servicio de la gastronomía en Rosario. Calidad constante, sabor auténtico.',
+    metadataBase: new URL('https://www.ferreyraembutidos.com'),
+    title: {
+        default: 'Embutidos Ferreyra | Calidad de Campo',
+        template: '%s | Embutidos Ferreyra'
+    },
+    description: 'Distribuidor mayorista de carne, cerdo, pollo y embutidos en Rosario y zona. Tradición familiar y calidad de campo para gastronomía y comercios.',
+    alternates: {
+        canonical: '/',
+    },
+    openGraph: {
+        title: 'Embutidos Ferreyra | Calidad de Campo',
+        description: 'Distribuidor mayorista de carne, cerdo, pollo y embutidos en Rosario y zona. Tradición familiar y calidad de campo para gastronomía y comercios.',
+        url: 'https://www.ferreyraembutidos.com',
+        siteName: 'Embutidos Ferreyra',
+        images: [
+            {
+                url: '/opengraph-image.jpg',
+                width: 1200,
+                height: 630,
+                alt: 'Embutidos Ferreyra',
+            }
+        ],
+        locale: 'es_AR',
+        type: 'website',
+    },
+    robots: {
+        index: true,
+        follow: true,
+        googleBot: {
+            index: true,
+            follow: true,
+            'max-video-preview': -1,
+            'max-image-preview': 'large',
+            'max-snippet': -1,
+        },
+    },
+    icons: {
+        icon: '/favicon.ico',
+        apple: '/apple-touch-icon.png',
+    },
+    twitter: {
+        card: 'summary_large_image',
+        title: 'Embutidos Ferreyra',
+        description: 'Calidad de campo y tradición en Rosario.',
+        images: ['/opengraph-image.jpg'],
+    },
 };
 
 export default function RootLayout({ children }) {
