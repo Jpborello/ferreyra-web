@@ -1,5 +1,10 @@
 import postgres from 'postgres';
-import 'dotenv/config';
+import dotenv from 'dotenv';
+// dotenv por default solo carga '.env'. Este proyecto usa '.env.local'
+// (la convención de Next.js), así que hay que apuntarlo explícitamente
+// o process.env.DATABASE_URL queda undefined y estos scripts fallan
+// con "No DATABASE_URL found" aunque el archivo exista y esté bien.
+dotenv.config({ path: '.env.local' });
 
 // NOTA HISTORICA: esta versión reemplaza a la anterior, que DESHABILITABA
 // RLS (Row Level Security) en 'products' y dejaba el bucket de storage con
