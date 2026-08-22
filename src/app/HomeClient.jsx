@@ -130,7 +130,7 @@ const Home = () => {
             // 2. Fetch Products
             const { data, error } = await supabase
                 .from('products')
-                .select('id, name, price, category, image_url, is_active')
+                .select('id, name, price, category, image_url, is_active, unit')
                 .eq('is_active', true);
 
             if (error) {
@@ -240,7 +240,7 @@ const Home = () => {
     const ProductCard = ({ product }) => (
         <motion.div
             layout
-            className="group bg-[#F3E6D0] border border-[#3D2B1F]/20 hover:border-[#3D2B1F] hover:shadow-[8px_8px_0px_0px_rgba(61,43,31,0.1)] transition-all duration-300 flex flex-col"
+            className="group bg-[#F3E6D0] border border-[#3D2B1F]/20 hover:border-[#3D2B1F] hover:shadow-[8px_8px_0px_0px_rgba(61,43,31,0.1)] transition-all duration-300 flex flex-col w-full sm:w-[calc(50%-1rem)] lg:w-[calc(25%-1.5rem)]"
         >
             <div className="relative h-64 overflow-hidden border-b border-[#3D2B1F]/10 bg-white">
                 <div className="absolute top-3 right-3 z-10">
@@ -285,7 +285,12 @@ const Home = () => {
             <div className="fixed inset-0 pointer-events-none opacity-40 mix-blend-multiply z-0" style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/cardboard-flat.png")' }}></div>
 
             {/* Navigation - Rustic Elegant */}
-            <nav className={`fixed w-full z-50 transition-all duration-300 border-b border-[#3D2B1F]/10 ${scrolled ? 'bg-[#F3E6D0]/95 backdrop-blur-md shadow-md py-2' : 'bg-[#F3E6D0] py-4'}`}>
+            {/* Altura del nav fija (py-3 siempre) a propósito: los elementos "sticky top-20" más
+                abajo en este archivo (menú mobile y filtro de categorías) asumen una altura de
+                header constante de 80px. Si el padding cambiara entre estado scrolleado y no
+                scrolleado, ese offset queda desactualizado y esos elementos terminan
+                superpuestos con el header. Solo el fondo/blur/sombra cambian con el scroll. */}
+            <nav className={`fixed w-full z-50 transition-all duration-300 border-b border-[#3D2B1F]/10 py-3 ${scrolled ? 'bg-[#F3E6D0]/95 backdrop-blur-md shadow-md' : 'bg-[#F3E6D0]'}`}>
                 <div className="max-w-7xl mx-auto px-4 w-full flex justify-between items-center text-[#3D2B1F]">
 
                     {/* Logo Section */}
@@ -671,7 +676,14 @@ const Home = () => {
                                         </h3>
                                     </div>
 
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                                    {/* flex + wrap en vez de grid: con pocos productos en una categoría
+                                        (ej. Ternera con 2), un grid de 4 columnas deja un hueco vacío
+                                        enorme a la derecha. Con flex-wrap + justify-center las cards
+                                        se acomodan agrupadas al centro sea cual sea la cantidad, y
+                                        mantienen el mismo ancho por breakpoint (ver clases w-* en
+                                        ProductCard) para que se vea igual que el grid de antes cuando
+                                        sí hay suficientes productos para llenar la fila. */}
+                                    <div className="flex flex-wrap justify-center gap-8">
                                         {products.filter(p => {
                                             const cat = p.category.toLowerCase();
                                             if (categoryFilter === 'avicola') return cat.includes('pollo');

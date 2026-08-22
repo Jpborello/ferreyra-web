@@ -90,14 +90,15 @@ const Admin = () => {
             // Fetch Products
             const { data: pData } = await supabase
                 .from('products')
-                .select('id, name, price, category, is_active, stock, legacy_id, image_url')
+                .select('id, name, price, category, is_active, stock, legacy_id, image_url, unit')
                 .order('name');
 
             if (pData) {
                 const normalized = pData.map(d => ({
                     ...d,
                     price: Number(d.price),
-                    category: d.category || 'General'
+                    category: d.category || 'General',
+                    unit: d.unit || 'kg'
                 }));
                 setProducts(normalized);
             }
@@ -171,6 +172,7 @@ const Admin = () => {
             price: '',
             stock: 0,
             category: 'Carne Vacuna',
+            unit: 'kg',
             is_active: true,
             image_url: ''
         });
@@ -185,6 +187,7 @@ const Admin = () => {
             price: product.price,
             stock: product.stock || 0,
             category: product.category || 'General',
+            unit: product.unit || 'kg',
             is_active: product.is_active,
             image_url: product.image_url || ''
         });
@@ -225,6 +228,7 @@ const Admin = () => {
                 price: parseFloat(editingProduct.price), // Ensure float
                 stock: parseInt(editingProduct.stock) || 0,
                 category: editingProduct.category,
+                unit: editingProduct.unit || 'kg',
                 is_active: editingProduct.is_active,
                 image_url: imageUrl
             };
@@ -885,6 +889,23 @@ const Admin = () => {
                                     </div>
                                 </div>
                                 <p className="text-[10px] text-slate-500 mt-1">Precio Formato: 0000.00 (Ej: 86277.65)</p>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Unidad de Venta</label>
+                                    <select
+                                        value={editingProduct.unit || 'kg'}
+                                        onChange={(e) => setEditingProduct({ ...editingProduct, unit: e.target.value })}
+                                        className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white focus:border-[#C99A3A] focus:outline-none"
+                                    >
+                                        <option value="kg">Kg</option>
+                                        <option value="unidad">Unidad</option>
+                                        <option value="docena">Docena</option>
+                                        <option value="media docena">Media Docena</option>
+                                        <option value="caja">Caja</option>
+                                        <option value="bandeja">Bandeja</option>
+                                    </select>
+                                    <p className="text-[10px] text-slate-500 mt-1">Define qué dice el catálogo: "Precio x {editingProduct.unit || 'kg'}". Importante para productos que no se venden por kilo (ej. Huevos).</p>
+                                </div>
 
                                 <div>
                                     <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Imagen</label>
