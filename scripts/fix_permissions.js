@@ -64,14 +64,27 @@ async function securePermissions() {
             USING (bucket_id = 'products')
         `;
 
-        console.log("🔒 Restringiendo escritura en 'orders' y 'customers' a usuarios autenticados...");
-        // Las lecturas/inserciones públicas se mantienen porque el checkout
-        // del sitio (sin login de cliente) las necesita. Pero solo el panel
-        // admin autenticado puede modificar o borrar. Ver recomendación de
-        // Claude sobre mover esta lógica a una Edge Function si en algún
-        // momento se quiere cerrar también la lectura pública.
+        console.log("🔒 Reemplazando la política 'permitir todo' de 'orders' y 'customers'...");
+        // OJO: la política original "Enable all access for orders/customers"
+        // (de latest_schema.sql) es FOR ALL USING(true) - cubre también
+        // UPDATE y DELETE para cualquiera. En Postgres las políticas RLS son
+        // permisivas por defecto y se combinan con OR, así que si no se
+        // borra esa política vieja, agregar una política nueva más
+        // restrictiva al lado NO restringe nada en la práctica. Por eso acá
+        // se borra primero y se recrean las 4 operaciones por separado.
+        await sql`DROP POLICY IF EXISTS "Enable all access for orders" ON public.orders`;
         await sql`DROP POLICY IF EXISTS "orders_admin_update" ON public.orders`;
         await sql`DROP POLICY IF EXISTS "orders_admin_delete" ON public.orders`;
+        await sql`DROP POLICY IF EXISTS "orders_public_insert" ON public.orders`;
+        await sql`DROP POLICY IF EXISTS "orders_public_select" ON public.orders`;
+        await sql`
+            CREATE POLICY "orders_public_insert" ON public.orders
+            FOR INSERT TO anon, authenticated WITH CHECK (true)
+        `;
+        await sql`
+            CREATE POLICY "orders_public_select" ON public.orders
+            FOR SELECT TO anon, authenticated USING (true)
+        `;
         await sql`
             CREATE POLICY "orders_admin_update" ON public.orders
             FOR UPDATE TO authenticated USING (true) WITH CHECK (true)
@@ -81,7 +94,23 @@ async function securePermissions() {
             FOR DELETE TO authenticated USING (true)
         `;
 
+        await sql`DROP POLICY IF EXISTS "Enable all access for customers" ON public.customers`;
         await sql`DROP POLICY IF EXISTS "customers_admin_delete" ON public.customers`;
+        await sql`DROP POLICY IF EXISTS "customers_public_select" ON public.customers`;
+        await sql`DROP POLICY IF EXISTS "customers_public_insert" ON public.customers`;
+        await sql`DROP POLICY IF EXISTS "customers_public_update" ON public.customers`;
+        await sql`
+            CREATE POLICY "customers_public_select" ON public.customers
+            FOR SELECT TO anon, authenticated USING (true)
+        `;
+        await sql`
+            CREATE POLICY "customers_public_insert" ON public.customers
+            FOR INSERT TO anon, authenticated WITH CHECK (true)
+        `;
+        await sql`
+            CREATE POLICY "customers_public_update" ON public.customers
+            FOR UPDATE TO anon, authenticated USING (true) WITH CHECK (true)
+        `;
         await sql`
             CREATE POLICY "customers_admin_delete" ON public.customers
             FOR DELETE TO authenticated USING (true)

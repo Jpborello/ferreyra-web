@@ -17,6 +17,17 @@ const FeaturedCarousel = ({ slides = [] }) => {
         return () => clearInterval(timer);
     }, [current, slides.length]); // Add updated dependency
 
+    // Si la lista de slides se achica (ej: el admin desactiva una) y el
+    // índice actual queda fuera de rango, lo volvemos a 0. Antes esto se
+    // hacía con un setTimeout(...,0) durante el render, lo cual es un
+    // anti-patrón de React (efecto secundario en render) y podía generar
+    // timers redundantes en renders repetidos.
+    useEffect(() => {
+        if (slides.length > 0 && current >= slides.length) {
+            setCurrent(0);
+        }
+    }, [slides.length, current]);
+
     const nextSlide = () => {
         if (!slides.length) return;
         setDirection(1);
@@ -51,13 +62,11 @@ const FeaturedCarousel = ({ slides = [] }) => {
 
     if (!slides.length) return null;
 
-    // Safety check: ensure current index is valid
+    // Safety check: ensure current index is valid. El useEffect de arriba
+    // corrige el índice cuando queda fuera de rango; acá solo evitamos
+    // renderizar con un slide undefined mientras tanto.
     const slide = slides[current];
     if (!slide) {
-        // If out of bounds relative to new slides, reset or return null temporarily
-        if (current >= slides.length && slides.length > 0) {
-            setTimeout(() => setCurrent(0), 0);
-        }
         return null;
     }
 

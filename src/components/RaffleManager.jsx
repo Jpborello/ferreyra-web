@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { Ticket, Plus, Trophy, Archive, AlertCircle, History } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -17,8 +17,20 @@ const RaffleManager = () => {
     const [winner, setWinner] = useState(null);
     const [randomTicker, setRandomTicker] = useState('000');
 
+    // Refs para el timer del sorteo animado: si el admin navega a otra
+    // pestaña o cambia de sorteo mientras la animación de 3s todavía está
+    // corriendo, hay que cancelarla en vez de dejar que actualice estado
+    // de un componente desmontado (o escriba un ganador para un sorteo
+    // que ya no es el seleccionado).
+    const drawIntervalRef = useRef(null);
+    const drawTimeoutRef = useRef(null);
+
     useEffect(() => {
         fetchRaffles();
+        return () => {
+            if (drawIntervalRef.current) clearInterval(drawIntervalRef.current);
+            if (drawTimeoutRef.current) clearTimeout(drawTimeoutRef.current);
+        };
     }, []);
 
     useEffect(() => {
@@ -63,20 +75,32 @@ const RaffleManager = () => {
         setIsDrawing(true);
         setWinner(null);
 
+        // Capturamos el sorteo sobre el que estamos sorteando para poder
+        // detectar si cambió (el admin seleccionó otro) cuando el timeout
+        // dispare 3s después.
+        const raffleIdAtStart = selectedRaffle?.id;
+
         // Animation Loop
-        const interval = setInterval(() => {
+        drawIntervalRef.current = setInterval(() => {
             const random = tickets[Math.floor(Math.random() * tickets.length)];
             setRandomTicker(random.ticket_number);
         }, 100);
 
         // Decide Winner after 3 seconds
-        setTimeout(async () => {
-            clearInterval(interval);
+        drawTimeoutRef.current = setTimeout(async () => {
+            clearInterval(drawIntervalRef.current);
+            drawIntervalRef.current = null;
+            drawTimeoutRef.current = null;
+
+            // Si mientras tanto se eligió otro sorteo, no escribimos un
+            // ganador para el sorteo viejo con datos que ya no corresponden.
+            if (selectedRaffle?.id !== raffleIdAtStart) return;
+
             const winningTicket = tickets[Math.floor(Math.random() * tickets.length)];
 
             // Save to DB
             await supabase.from('raffle_tickets').update({ is_winner: true }).eq('id', winningTicket.id);
-            await supabase.from('raffles').update({ winner_ticket_id: winningTicket.id, status: 'completed' }).eq('id', selectedRaffle.id);
+            await supabase.from('raffles').update({ winner_ticket_id: winningTicket.id, status: 'completed' }).eq('id', raffleIdAtStart);
 
             setWinner(winningTicket);
             setIsDrawing(false);

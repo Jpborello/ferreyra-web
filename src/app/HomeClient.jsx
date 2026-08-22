@@ -138,8 +138,6 @@ const Home = () => {
 
     const cartTotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
     const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
-    const categories = ['all', ...new Set(products.map(p => p.category))];
-    const filteredProducts = categoryFilter === 'all' ? products : products.filter(p => p.category === categoryFilter);
 
     const handleOrderClick = () => {
         setCheckoutOpen(true);
@@ -962,7 +960,7 @@ const CheckoutModal = ({ isOpen, onClose, cart, total, clearCart }) => {
                                                     </div>
                                                     <div className="flex items-center gap-4">
                                                         <span className="font-bold text-[#3D2B1F]">{item.quantity} x {item.unit || 'u'}</span>
-                                                        <span className="font-serif font-bold text-[#3D2B1F] min-w-[80px] text-right">{new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(item.price * item.quantity)}</span>
+                                                        <span className="font-serif font-bold text-[#3D2B1F] min-w-[80px] text-right">{formatPrice(item.price * item.quantity)}</span>
                                                     </div>
                                                 </li>
                                             ))}
@@ -970,7 +968,7 @@ const CheckoutModal = ({ isOpen, onClose, cart, total, clearCart }) => {
                                         <div className="flex justify-between items-center pt-4 border-t-2 border-[#3D2B1F]">
                                             <span className="text-lg font-bold uppercase tracking-wider text-[#3D2B1F]">Total Estimado</span>
                                             <span className="text-2xl font-serif font-bold text-[#C99A3A]">
-                                                {new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(total)}
+                                                {formatPrice(total)}
                                             </span>
                                         </div>
                                         <div className="mt-8 flex justify-end">
