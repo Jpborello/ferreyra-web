@@ -1,6 +1,12 @@
 import postgres from 'postgres';
+import 'dotenv/config';
 
-const sql = postgres('postgresql://postgres.yfbhnvihdqwzxujszwic:Ferreyraemb2026@@aws-0-us-west-2.pooler.supabase.com:6543/postgres');
+if (!process.env.DATABASE_URL) {
+    console.error('Falta DATABASE_URL en tu .env.local');
+    process.exit(1);
+}
+
+const sql = postgres(process.env.DATABASE_URL);
 
 async function listTables() {
     try {
