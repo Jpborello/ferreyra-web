@@ -6,10 +6,20 @@ import { ShoppingBag, Phone, MapPin, Truck, Award, Search, Menu, X, ChevronRight
 import { motion, AnimatePresence } from 'framer-motion';
 import FeaturedCarousel from '../components/FeaturedCarousel';
 import CollaborationSection from '../components/CollaborationSection';
+import ToastContainer from '../components/ToastContainer';
+import { useToast } from '../lib/useToast';
 
 import TicketDisplay from '../components/TicketDisplay';
 
+// Nivel de módulo (no dentro de ningún componente) para que tanto Home
+// como CheckoutModal, más abajo en este mismo archivo, puedan usarla sin
+// tener que pasarla por props ni reimplementarla cada uno por su lado.
+const formatPrice = (price) => {
+    return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 }).format(price);
+};
+
 const Home = () => {
+    const { toasts, showToast, dismissToast } = useToast();
     const [scrolled, setScrolled] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [categoryFilter, setCategoryFilter] = useState('all');
@@ -20,6 +30,12 @@ const Home = () => {
 
     // Cart State
     const [cart, setCart] = useState([]);
+    // Arranca en false a propósito: el servidor siempre renderiza con el
+    // carrito vacío (localStorage no existe en SSR), así que recién
+    // después de montar en el cliente cargamos lo guardado. Este flag
+    // evita que el efecto de guardado pise el carrito guardado con [] antes
+    // de que termine de cargarse.
+    const [cartLoaded, setCartLoaded] = useState(false);
 
     useEffect(() => {
         const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -28,6 +44,31 @@ const Home = () => {
         fetchSlides();
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
+
+    // Cargar el carrito guardado (una sola vez, al montar en el cliente)
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem('ferreyra_cart');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed)) setCart(parsed);
+            }
+        } catch (e) {
+            console.error('Error cargando el carrito guardado:', e);
+        } finally {
+            setCartLoaded(true);
+        }
+    }, []);
+
+    // Guardar el carrito cada vez que cambia (recién una vez cargado, ver arriba)
+    useEffect(() => {
+        if (!cartLoaded) return;
+        try {
+            localStorage.setItem('ferreyra_cart', JSON.stringify(cart));
+        } catch (e) {
+            console.error('Error guardando el carrito:', e);
+        }
+    }, [cart, cartLoaded]);
 
     const fetchSlides = async () => {
         try {
@@ -98,11 +139,22 @@ const Home = () => {
                 const normalized = data.map(d => ({
                     ...d,
                     price: Number(d.price),
-                    // Handle category relation vs flatted string. 
+                    // Handle category relation vs flatted string.
                     // If categories is an object (joined), use its name. Fallback to existing logic if it was a direct column.
                     category: d.category || 'Varios'
                 }));
                 setProducts(normalized);
+
+                // El carrito puede venir de localStorage de una visita
+                // anterior (a veces días atrás). Lo reconciliamos contra el
+                // catálogo fresco: sacamos productos que ya no existen o se
+                // desactivaron, y actualizamos el precio al vigente para no
+                // mandar un pedido con un precio viejo.
+                const byId = new Map(normalized.map(p => [p.id, p]));
+                setCart(prevCart => prevCart
+                    .filter(item => byId.has(item.id))
+                    .map(item => ({ ...item, price: byId.get(item.id).price }))
+                );
             }
         } catch (e) {
             console.error("Fetch error:", e);
@@ -145,10 +197,6 @@ const Home = () => {
 
     const getWhatsAppLink = () => {
         return `https://wa.me/5493414689424?text=Hola,%20quisiera%20más%20información%20sobre%20los%20productos%20mayoristas.`;
-    };
-
-    const formatPrice = (price) => {
-        return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 }).format(price);
     };
 
     // Sub-components
@@ -770,12 +818,15 @@ const Home = () => {
                 cart={cart}
                 total={cartTotal}
                 clearCart={() => setCart([])}
+                showToast={showToast}
             />
+
+            <ToastContainer toasts={toasts} onDismiss={dismissToast} />
         </div>
     );
 };
 
-const CheckoutModal = ({ isOpen, onClose, cart, total, clearCart }) => {
+const CheckoutModal = ({ isOpen, onClose, cart, total, clearCart, showToast }) => {
     const [step, setStep] = useState(1); // 1: Resumen, 2: Datos, 3: Éxito
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
@@ -882,21 +933,19 @@ const CheckoutModal = ({ isOpen, onClose, cart, total, clearCart }) => {
             // 4. GENERATE RAFFLE TICKET (If active raffle exists)
             if (activeRaffle) {
                 try {
-                    // Get current count to generate sequential number
-                    const { count } = await supabase
-                        .from('raffle_tickets')
-                        .select('id', { count: 'exact', head: true })
-                        .eq('raffle_id', activeRaffle.id);
+                    // El número de ticket se calcula y se inserta atómicamente
+                    // en la función create_raffle_ticket (ver
+                    // scripts/raffle_ticket_function.sql), en vez de hacer
+                    // "contar + insertar" acá en el cliente. Eso evitaba
+                    // duplicados cuando dos clientes compraban casi al mismo
+                    // tiempo durante un sorteo activo.
+                    const { data: ticket, error: ticketError } = await supabase.rpc('create_raffle_ticket', {
+                        p_raffle_id: activeRaffle.id,
+                        p_order_id: newOrder.id,
+                        p_customer_name: formData.businessName
+                    });
 
-                    const nextNum = String((count || 0) + 1).padStart(3, '0');
-
-                    const { data: ticket } = await supabase.from('raffle_tickets').insert({
-                        raffle_id: activeRaffle.id,
-                        order_id: newOrder.id,
-                        customer_name: formData.businessName,
-                        ticket_number: nextNum
-                    }).select().single();
-
+                    if (ticketError) throw ticketError;
                     if (ticket) setTicketData({ ...ticket, raffle_title: activeRaffle.title });
 
                 } catch (raffleError) {
@@ -910,7 +959,10 @@ const CheckoutModal = ({ isOpen, onClose, cart, total, clearCart }) => {
 
         } catch (error) {
             console.error("Order Error Full:", JSON.stringify(error, null, 2));
-            alert(`Error al enviar: ${error.message || JSON.stringify(error)}`);
+            // Mensaje genérico para el cliente (no le mostramos el error
+            // crudo de Supabase); el detalle completo queda en la consola
+            // para poder debuggear.
+            showToast('No pudimos enviar tu pedido. Probá de nuevo o escribinos por WhatsApp.', 'error');
         } finally {
             setLoading(false);
         }

@@ -6,7 +6,7 @@ import { Trash2, Plus, Save, ToggleLeft, ToggleRight, ArrowUp, ArrowDown } from 
 import { motion, AnimatePresence } from 'framer-motion';
 import ImageUpload from './ImageUpload';
 
-const CarouselManager = () => {
+const CarouselManager = ({ showToast }) => {
     const [slides, setSlides] = useState([]);
     const [loading, setLoading] = useState(true);
     const [editingId, setEditingId] = useState(null);
@@ -61,8 +61,9 @@ const CarouselManager = () => {
             setEditingId(null);
             resetForm();
             fetchSlides();
+            showToast?.('Slide guardado', 'success');
         } catch (error) {
-            alert('Error al guardar: ' + error.message);
+            showToast?.('Error al guardar: ' + error.message, 'error');
         }
     };
 
@@ -72,8 +73,10 @@ const CarouselManager = () => {
             const { error } = await supabase.from('slides').delete().eq('id', id);
             if (error) throw error;
             fetchSlides();
+            showToast?.('Slide eliminado', 'success');
         } catch (error) {
             console.error('Error deleting:', error);
+            showToast?.('Error al eliminar el slide', 'error');
         }
     };
 
@@ -115,6 +118,7 @@ const CarouselManager = () => {
             ]);
         } catch (error) {
             console.error('Error swapping order:', error);
+            showToast?.('No se pudo reordenar, se revirtió el cambio', 'error');
             fetchSlides(); // Revert on error
         }
     };

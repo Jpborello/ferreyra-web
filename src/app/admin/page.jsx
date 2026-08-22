@@ -11,8 +11,11 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import CarouselManager from '../../components/CarouselManager';
 import RaffleManager from '../../components/RaffleManager';
+import ToastContainer from '../../components/ToastContainer';
+import { useToast } from '../../lib/useToast';
 
 const Admin = () => {
+    const { toasts, showToast, dismissToast } = useToast();
     const [activeTab, setActiveTab] = useState('orders'); // orders, sent, metrics, products
     const [orders, setOrders] = useState([]);
     const [products, setProducts] = useState([]);
@@ -138,7 +141,7 @@ const Admin = () => {
             }
         } catch (error) {
             console.error("Error updating status:", error);
-            alert("Error al actualizar estado");
+            showToast("Error al actualizar estado", "error");
         }
     };
 
@@ -156,7 +159,7 @@ const Admin = () => {
             setProducts(prev => prev.map(p => p.id === productId ? { ...p, is_active: newStatus } : p));
         } catch (error) {
             console.error("Error toggling stock:", error);
-            alert("Error al actualizar stock");
+            showToast("Error al actualizar stock", "error");
         }
     };
 
@@ -243,11 +246,11 @@ const Admin = () => {
             // 4. Refresh & Close
             await fetchData();
             setShowProductModal(false);
-            alert("Producto guardado correctamente");
+            showToast("Producto guardado correctamente", "success");
 
         } catch (error) {
             console.error("Error saving product:", error);
-            alert("Error al guardar: " + error.message);
+            showToast("Error al guardar: " + error.message, "error");
         } finally {
             setUploading(false);
         }
@@ -785,13 +788,13 @@ const Admin = () => {
                 {/* CAROUSEL MANAGEMENT VIEW */}
                 {activeTab === 'carousel' && (
                     <div className="flex-1 overflow-auto p-0">
-                        <CarouselManager />
+                        <CarouselManager showToast={showToast} />
                     </div>
                 )}
                 {/* RAFFLE MANAGEMENT VIEW */}
                 {activeTab === 'raffles' && (
                     <div className="flex-1 overflow-auto p-0">
-                        <RaffleManager />
+                        <RaffleManager showToast={showToast} />
                     </div>
                 )}
             </div>
@@ -957,6 +960,8 @@ const Admin = () => {
                     </div>
                 )}
             </AnimatePresence>
+
+            <ToastContainer toasts={toasts} onDismiss={dismissToast} />
         </div>
     );
 };

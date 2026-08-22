@@ -5,7 +5,7 @@ import { Ticket, Plus, Trophy, Archive, AlertCircle, History } from 'lucide-reac
 import { motion, AnimatePresence } from 'framer-motion';
 import Confetti from 'react-confetti';
 
-const RaffleManager = () => {
+const RaffleManager = ({ showToast }) => {
     const [raffles, setRaffles] = useState([]);
     const [tickets, setTickets] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -61,15 +61,20 @@ const RaffleManager = () => {
 
     const createRaffle = async (title) => {
         const { error } = await supabase.from('raffles').insert([{ title, status: 'active' }]);
-        if (error) alert(error.message);
-        else {
+        if (error) {
+            showToast?.(error.message, 'error');
+        } else {
             setShowCreateModal(false);
             fetchRaffles();
+            showToast?.('Sorteo creado', 'success');
         }
     };
 
     const drawWinner = async () => {
-        if (tickets.length === 0) return alert('No hay tickets para sortear.');
+        if (tickets.length === 0) {
+            showToast?.('No hay tickets para sortear.', 'error');
+            return;
+        }
         if (!confirm('¿Iniciar sorteo?')) return;
 
         setIsDrawing(true);
@@ -99,20 +104,34 @@ const RaffleManager = () => {
             const winningTicket = tickets[Math.floor(Math.random() * tickets.length)];
 
             // Save to DB
-            await supabase.from('raffle_tickets').update({ is_winner: true }).eq('id', winningTicket.id);
-            await supabase.from('raffles').update({ winner_ticket_id: winningTicket.id, status: 'completed' }).eq('id', raffleIdAtStart);
+            const { error: ticketErr } = await supabase.from('raffle_tickets').update({ is_winner: true }).eq('id', winningTicket.id);
+            const { error: raffleErr } = await supabase.from('raffles').update({ winner_ticket_id: winningTicket.id, status: 'completed' }).eq('id', raffleIdAtStart);
+
+            if (ticketErr || raffleErr) {
+                console.error('Error guardando ganador:', ticketErr || raffleErr);
+                showToast?.('El sorteo terminó pero no se pudo guardar el ganador. Reintentá.', 'error');
+                setIsDrawing(false);
+                return;
+            }
 
             setWinner(winningTicket);
             setIsDrawing(false);
+            showToast?.(`🎉 Ganador: ticket #${winningTicket.ticket_number}`, 'success');
             fetchRaffles();
         }, 3000);
     };
 
     const archiveRaffle = async () => {
         if (!confirm('¿Archivar este sorteo? Ya no se verán los tickets en la lista principal.')) return;
-        await supabase.from('raffles').update({ status: 'archived' }).eq('id', selectedRaffle.id);
+        const { error } = await supabase.from('raffles').update({ status: 'archived' }).eq('id', selectedRaffle.id);
+        if (error) {
+            console.error('Error archivando sorteo:', error);
+            showToast?.('No se pudo archivar el sorteo', 'error');
+            return;
+        }
         fetchRaffles();
         setSelectedRaffle(null);
+        showToast?.('Sorteo archivado', 'success');
     };
 
     // Calculate Grid
