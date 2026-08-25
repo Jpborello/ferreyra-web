@@ -8,6 +8,7 @@ import FeaturedCarousel from '../components/FeaturedCarousel';
 import CollaborationSection from '../components/CollaborationSection';
 import ToastContainer from '../components/ToastContainer';
 import { useToast } from '../lib/useToast';
+import { normalizeProducts } from '../lib/products';
 
 import TicketDisplay from '../components/TicketDisplay';
 
@@ -18,14 +19,59 @@ const formatPrice = (price) => {
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 }).format(price);
 };
 
-const Home = () => {
+// Nivel de modulo, misma razon que formatPrice: la usan tanto el estado
+// inicial (datos ya resueltos en el servidor) como fetchSlides (refetch de
+// respaldo si el servidor no pudo traer nada).
+const mapSlidesData = (data) => {
+    if (data && data.length > 0) {
+        return data.map(s => ({
+            image: s.image_url,
+            title: s.title,
+            subtitle: s.subtitle,
+            tag: s.tag,
+            action: s.action_text,
+            onAction: () => {
+                if (s.action_url) {
+                    if (s.action_url.startsWith('http')) {
+                        window.open(s.action_url, '_blank');
+                    } else if (s.action_url.startsWith('#')) {
+                        // Internal anchor
+                        const id = s.action_url.substring(1);
+                        const el = document.getElementById(id);
+                        if (el) el.scrollIntoView({ behavior: 'smooth' });
+                    } else {
+                        // Maybe category filter? e.g. "category:vacuna"
+                        // simple implementation for now:
+                        console.log("Action:", s.action_url);
+                    }
+                }
+            }
+        }));
+    }
+    // Fallback Mock Data if table empty
+    return [
+        {
+            image: "/hero-rustic.webp",
+            title: "Sabores de Fiesta",
+            subtitle: "Preparate para compartir los mejores momentos.",
+            tag: "Especial Fin de Año",
+            action: "Ver Promociones",
+            onAction: () => {
+                const element = document.getElementById('catalog');
+                if (element) element.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+    ];
+};
+
+const Home = ({ initialProducts = [], initialSlidesRaw = [] }) => {
     const { toasts, showToast, dismissToast } = useToast();
     const [scrolled, setScrolled] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [categoryFilter, setCategoryFilter] = useState('all');
-    const [products, setProducts] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [slides, setSlides] = useState([]);
+    const [products, setProducts] = useState(initialProducts);
+    const [loading, setLoading] = useState(initialProducts.length === 0);
+    const [slides, setSlides] = useState(() => mapSlidesData(initialSlidesRaw));
     const [checkoutOpen, setCheckoutOpen] = useState(false);
 
     // Cart State
@@ -40,10 +86,23 @@ const Home = () => {
     useEffect(() => {
         const handleScroll = () => setScrolled(window.scrollY > 20);
         window.addEventListener('scroll', handleScroll);
-        fetchProducts();
-        fetchSlides();
+        // page.jsx (Server Component) ya trajo el catalogo y los slides
+        // antes de mandar el HTML. Solo pedimos de nuevo desde el cliente
+        // si por algun motivo no llego nada (error puntual del server fetch).
+        if (initialProducts.length === 0) fetchProducts();
+        if (initialSlidesRaw.length === 0) fetchSlides();
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
+
+    // Si el catalogo ya vino resuelto del servidor, fetchProducts() no se
+    // llama al montar (arriba) y por lo tanto tampoco corre ahi la
+    // reconciliacion del carrito guardado contra el catalogo fresco. La
+    // hacemos aca una vez que el carrito de localStorage termino de cargar.
+    useEffect(() => {
+        if (!cartLoaded || initialProducts.length === 0) return;
+        reconcileCart(initialProducts);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [cartLoaded]);
 
     // Cargar el carrito guardado (una sola vez, al montar en el cliente)
     useEffect(() => {
@@ -78,52 +137,28 @@ const Home = () => {
                 .eq('active', true)
                 .order('display_order', { ascending: true });
 
-            if (data && data.length > 0) {
-                const mappedSlides = data.map(s => ({
-                    image: s.image_url,
-                    title: s.title,
-                    subtitle: s.subtitle,
-                    tag: s.tag,
-                    action: s.action_text,
-                    onAction: () => {
-                        if (s.action_url) {
-                            if (s.action_url.startsWith('http')) {
-                                window.open(s.action_url, '_blank');
-                            } else if (s.action_url.startsWith('#')) {
-                                // Internal anchor
-                                const id = s.action_url.substring(1);
-                                const el = document.getElementById(id);
-                                if (el) el.scrollIntoView({ behavior: 'smooth' });
-                            } else {
-                                // Maybe category filter? e.g. "category:vacuna"
-                                // simple implementation for now:
-                                console.log("Action:", s.action_url);
-                            }
-                        }
-                    }
-                }));
-                setSlides(mappedSlides);
-            } else {
-                // Fallback Mock Data if table empty
-                setSlides([
-                    {
-                        image: "/hero-rustic.webp",
-                        title: "Sabores de Fiesta",
-                        subtitle: "Preparate para compartir los mejores momentos.",
-                        tag: "Especial Fin de Año",
-                        action: "Ver Promociones",
-                        onAction: () => {
-                            const element = document.getElementById('catalog');
-                            if (element) element.scrollIntoView({ behavior: 'smooth' });
-                        }
-                    }
-                ]);
-            }
+            if (error) console.error("Supabase error (slides):", error);
+            setSlides(mapSlidesData(data));
         } catch (e) {
             console.error("Error fetching slides", e);
         }
     };
 
+
+    // Compartida entre fetchProducts (fallback client-side) y el efecto
+    // que reconcilia contra el catalogo que ya trajo el servidor.
+    const reconcileCart = (normalizedProducts) => {
+        // El carrito puede venir de localStorage de una visita anterior (a
+        // veces dias atras). Lo reconciliamos contra el catalogo fresco:
+        // sacamos productos que ya no existen o se desactivaron, y
+        // actualizamos el precio al vigente para no mandar un pedido con un
+        // precio viejo.
+        const byId = new Map(normalizedProducts.map(p => [p.id, p]));
+        setCart(prevCart => prevCart
+            .filter(item => byId.has(item.id))
+            .map(item => ({ ...item, price: byId.get(item.id).price }))
+        );
+    };
 
     const fetchProducts = async () => {
         try {
@@ -136,25 +171,9 @@ const Home = () => {
             if (error) {
                 console.error("Supabase error:", error);
             } else {
-                const normalized = data.map(d => ({
-                    ...d,
-                    price: Number(d.price),
-                    // Handle category relation vs flatted string.
-                    // If categories is an object (joined), use its name. Fallback to existing logic if it was a direct column.
-                    category: d.category || 'Varios'
-                }));
+                const normalized = normalizeProducts(data);
                 setProducts(normalized);
-
-                // El carrito puede venir de localStorage de una visita
-                // anterior (a veces días atrás). Lo reconciliamos contra el
-                // catálogo fresco: sacamos productos que ya no existen o se
-                // desactivaron, y actualizamos el precio al vigente para no
-                // mandar un pedido con un precio viejo.
-                const byId = new Map(normalized.map(p => [p.id, p]));
-                setCart(prevCart => prevCart
-                    .filter(item => byId.has(item.id))
-                    .map(item => ({ ...item, price: byId.get(item.id).price }))
-                );
+                reconcileCart(normalized);
             }
         } catch (e) {
             console.error("Fetch error:", e);
