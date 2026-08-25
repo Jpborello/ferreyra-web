@@ -90,7 +90,7 @@ const FeaturedCarousel = ({ slides = [] }) => {
                     {/* Background Image */}
                     <div className="absolute inset-0">
                         <Image
-                            src={typeof slide.image === 'string' ? slide.image.trim() : '/placeholder.jpg'}
+                            src={typeof slide.image === 'string' ? slide.image.trim() : '/placeholder.webp'}
                             alt={slide.title || 'Slide'}
                             fill
                             priority={current === 0}

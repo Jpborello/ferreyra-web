@@ -929,7 +929,7 @@ const Admin = () => {
                                         {(editingProduct.image_url || editingProduct.file) && (
                                             <div className="w-20 h-20 rounded-lg border border-slate-700 overflow-hidden bg-slate-800 shrink-0 relative">
                                                 <Image
-                                                    src={editingProduct.file ? URL.createObjectURL(editingProduct.file) : (typeof editingProduct.image_url === 'string' ? editingProduct.image_url.trim() : "/placeholder.jpg")}
+                                                    src={editingProduct.file ? URL.createObjectURL(editingProduct.file) : (typeof editingProduct.image_url === 'string' ? editingProduct.image_url.trim() : "/placeholder.webp")}
                                                     alt="Preview"
                                                     fill
                                                     unoptimized

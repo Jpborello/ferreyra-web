@@ -107,7 +107,7 @@ const Home = () => {
                 // Fallback Mock Data if table empty
                 setSlides([
                     {
-                        image: "/hero-rustic.png",
+                        image: "/hero-rustic.webp",
                         title: "Sabores de Fiesta",
                         subtitle: "Preparate para compartir los mejores momentos.",
                         tag: "Especial Fin de Año",
@@ -160,9 +160,9 @@ const Home = () => {
             console.error("Fetch error:", e);
             // Fallback
             setProducts([
-                { id: 1, name: "Salamin Picado Grueso", price: 8500, category: "embutidos", image_url: "/prod-salamin.png", unit: "kg" },
-                { id: 2, name: "Chorizo Puro Cerdo", price: 6200, category: "embutidos", image_url: "/prod-chorizo.png", unit: "kg" },
-                { id: 3, name: "Bondiola Curada", price: 14500, category: "fiambres", image_url: "/prod-bondiola.png", unit: "kg" },
+                { id: 1, name: "Salamin Picado Grueso", price: 8500, category: "embutidos", image_url: "/prod-salamin.webp", unit: "kg" },
+                { id: 2, name: "Chorizo Puro Cerdo", price: 6200, category: "embutidos", image_url: "/prod-chorizo.webp", unit: "kg" },
+                { id: 3, name: "Bondiola Curada", price: 14500, category: "fiambres", image_url: "/prod-bondiola.webp", unit: "kg" },
                 { id: 4, name: "Queso de Campo", price: 9200, category: "quesos", image_url: "https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?auto=format&fit=crop&q=80&w=2673", unit: "kg" },
             ]);
         } finally {
@@ -248,7 +248,7 @@ const Home = () => {
                 </div>
 
                 <Image
-                    src={typeof product.image_url === 'string' ? product.image_url.trim() : "/placeholder.jpg"}
+                    src={typeof product.image_url === 'string' ? product.image_url.trim() : "/placeholder.webp"}
                     alt={product.name}
                     width={400}
                     height={300}
@@ -297,7 +297,7 @@ const Home = () => {
                     <div className="flex items-center gap-3">
                         <div className="border-2 border-[#3D2B1F] rounded-full p-1 relative w-14 h-14 overflow-hidden">
                             <Image
-                                src="/logo.jpg"
+                                src="/logo.webp"
                                 alt="Embutidos Ferreyra"
                                 fill
                                 sizes="(max-width: 768px) 100vw, 56px"
@@ -373,7 +373,7 @@ const Home = () => {
             <section id="hero" className="relative h-[80vh] flex items-center justify-center overflow-hidden mt-20 mb-20 md:mb-0">
                 <div className="absolute inset-0 z-0">
                     <Image
-                        src="/hero-rustic.png"
+                        src="/hero-rustic.webp"
                         alt="Background"
                         fill
                         priority
@@ -447,7 +447,7 @@ const Home = () => {
                     <div className="md:w-1/2 relative h-[400px] border-none md:border-r md:border-[#3D2B1F]/20 pr-0 md:pr-12">
                         <div className="absolute inset-0 bg-[#C99A3A] transform translate-x-4 translate-y-4"></div>
                         <Image
-                            src="/story-rustic.png"
+                            src="/story-rustic.webp"
                             alt="Campo Argentino"
                             fill
                             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -481,7 +481,7 @@ const Home = () => {
             <section className="relative h-[40vh] flex items-center justify-center overflow-hidden my-12">
                 <div className="absolute inset-0 z-0">
                     <Image
-                        src="/macro-meat.png"
+                        src="/macro-meat.webp"
                         alt="Textura Premium"
                         fill
                         className="w-full h-full object-cover filter brightness-[0.7] sepia-[.1]"
@@ -538,7 +538,7 @@ const Home = () => {
                                         >
                                             <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all z-10"></div>
                                             <Image
-                                                src="/cat-chicken.jpg"
+                                                src="/cat-chicken.webp"
                                                 alt="Avicola"
                                                 fill
                                                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
@@ -557,7 +557,7 @@ const Home = () => {
                                         >
                                             <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all z-10"></div>
                                             <Image
-                                                src="/cat-meat.jpg"
+                                                src="/cat-meat.webp"
                                                 alt="Vacuna"
                                                 fill
                                                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
@@ -576,7 +576,7 @@ const Home = () => {
                                         >
                                             <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all z-10"></div>
                                             <Image
-                                                src="/cat-pork.jpg"
+                                                src="/cat-pork.webp"
                                                 alt="Cerdo"
                                                 fill
                                                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
@@ -595,7 +595,7 @@ const Home = () => {
                                         >
                                             <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all z-10"></div>
                                             <Image
-                                                src="/cat-eggs.jpg"
+                                                src="/cat-eggs.webp"
                                                 alt="Huevos"
                                                 fill
                                                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
@@ -734,7 +734,7 @@ const Home = () => {
             <section id="coverage" className="relative transition-all h-auto py-24 md:py-0 md:h-[60vh] flex items-center justify-center overflow-hidden border-t-8 border-[#C99A3A]">
                 <div className="absolute inset-0 z-0">
                     <Image
-                        src="/farm-rustic.png"
+                        src="/farm-rustic.webp"
                         alt="Campo Argentino"
                         fill
                         className="w-full h-full object-cover sepia-[.2] contrast-110"

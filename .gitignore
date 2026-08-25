@@ -13,3 +13,6 @@ yarn-debug.log*
 yarn-error.log*
 build_log.txt
 build_err.log
+
+# backup de imagenes originales antes de optimizar (borrar cuando se confirme todo ok)
+_originals_backup/

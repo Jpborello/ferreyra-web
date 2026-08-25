@@ -78,7 +78,7 @@ const ImageUpload = ({ onUpload, initialImage = '', label = 'Imagen', bucket = '
                 ) : preview ? (
                     <div className="relative w-full h-full flex items-center justify-center group min-h-[160px]">
                         <Image
-                            src={typeof preview === 'string' ? preview.trim() : '/placeholder.jpg'}
+                            src={typeof preview === 'string' ? preview.trim() : '/placeholder.webp'}
                             alt="Preview"
                             fill
                             className="object-contain rounded"
