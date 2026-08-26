@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import { supabase } from '../../lib/supabase';
 import { uploadImageAndReplace } from '../../lib/imageUpload';
@@ -267,7 +267,12 @@ const Admin = () => {
     };
 
     // --- Metrics / Analysis Logic ---
-    const getMetrics = () => {
+    // Antes esto era una funcion comun (getMetrics()) llamada directo en el
+    // render: recalculaba las metricas en CADA render, incluso los que no
+    // tienen nada que ver con pedidos o productos (por ejemplo, tipear en el
+    // buscador de otra pestaña). Con useMemo solo se vuelve a calcular
+    // cuando "orders" o "products" realmente cambian.
+    const metrics = useMemo(() => {
         // Sales Stats
         const salesMonth = orders.reduce((acc, o) => acc + (Number(o.total) || 0), 0);
         const pending = orders.filter(o => o.status === 'pending').length;
@@ -304,9 +309,7 @@ const Admin = () => {
         const lowRotation = statsArray.filter(p => p.soldQty === 0);
 
         return { salesMonth, pending, avgTicket, bestSellers, lowRotation };
-    };
-
-    const metrics = getMetrics();
+    }, [orders, products]);
 
     // --- Helpers ---
     const formatCurrency = (val) => new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 }).format(val);
