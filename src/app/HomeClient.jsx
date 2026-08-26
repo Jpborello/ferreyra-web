@@ -309,8 +309,11 @@ const Home = ({ initialProducts = [], initialSlidesRaw = [] }) => {
                 fixed. Antes la altura del nav dependia de su contenido (logo + py-3), asi que
                 podia terminar dando un pelin menos de 80px reales -> quedaba una franja de
                 fondo cream visible entre el nav y el hero. Con altura fija los dos lados usan
-                literalmente el mismo numero, no una coincidencia. */}
-            <nav className={`fixed w-full h-20 z-50 transition-all duration-300 border-b border-[#3D2B1F]/10 flex items-center ${scrolled ? 'bg-[#F3E6D0]/95 backdrop-blur-md shadow-md' : 'bg-[#F3E6D0]'}`}>
+                literalmente el mismo numero, no una coincidencia.
+                top-0 left-0 explicitos: sin esto "fixed" no ancla el nav al techo del
+                viewport, el navegador lo deja en su posicion estatica (calculada como si
+                no estuviera fixed) y aparece una franja en blanco arriba de el. */}
+            <nav className={`fixed top-0 left-0 w-full h-20 z-50 transition-all duration-300 border-b border-[#3D2B1F]/10 flex items-center ${scrolled ? 'bg-[#F3E6D0]/95 backdrop-blur-md shadow-md' : 'bg-[#F3E6D0]'}`}>
                 <div className="max-w-7xl mx-auto px-4 w-full flex justify-between items-center text-[#3D2B1F]">
 
                     {/* Logo Section */}
