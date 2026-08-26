@@ -6,7 +6,7 @@ import {
     LayoutGrid, DollarSign, TrendingUp, Truck, MapPin, Search,
     Package, ArrowRight, MessageCircle, AlertCircle, ShoppingBag,
     CheckCircle, X, Clock, Lock, BarChart3, AlertTriangle, Send,
-    Plus, Edit, UploadCloud, Trash2, Save, Image as ImageIcon, Ticket, LogOut // Imported LogOut
+    Plus, Edit, UploadCloud, Trash2, Save, Image as ImageIcon, Ticket, LogOut, Eye, EyeOff // Imported LogOut
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import CarouselManager from '../../components/CarouselManager';
@@ -24,7 +24,15 @@ const Admin = () => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [emailInput, setEmailInput] = useState('');
     const [passwordInput, setPasswordInput] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [loginError, setLoginError] = useState(null);
+    // Separado de loadingAuth: loadingAuth es el spinner de pantalla completa
+    // mientras se chequea si ya hay una sesion activa al montar. loggingIn es
+    // solo el spinner del boton mientras se procesa el submit del login. Antes
+    // compartian el mismo estado y cada intento de login (bien o mal) hacia
+    // que toda la pantalla de login desaparezca de golpe, reemplazada por el
+    // spinner de pantalla completa, en vez de solo el boton mostrando carga.
+    const [loggingIn, setLoggingIn] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [loadingAuth, setLoadingAuth] = useState(true);
 
@@ -54,7 +62,7 @@ const Admin = () => {
     const handleLogin = async (e) => {
         e.preventDefault();
         setLoginError(null);
-        setLoadingAuth(true);
+        setLoggingIn(true);
 
         const { error } = await supabase.auth.signInWithPassword({
             email: emailInput,
@@ -63,12 +71,12 @@ const Admin = () => {
 
         if (error) {
             setLoginError(error.message);
-            setLoadingAuth(false);
+            setLoggingIn(false);
         } else {
             // Success! 
             // The onAuthStateChange listener updates 'isAuthenticated',
             // but we must manually turn off the local loading state here.
-            setLoadingAuth(false);
+            setLoggingIn(false);
         }
     };
 
@@ -354,16 +362,27 @@ const Admin = () => {
                         autoFocus
                         required
                     />
-                    <input
-                        type="password"
-                        placeholder="Contraseña"
-                        value={passwordInput}
-                        onChange={(e) => setPasswordInput(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white mb-6 focus:border-[#C99A3A] focus:outline-none"
-                        required
-                    />
-                    <button disabled={loadingAuth} type="submit" className="w-full bg-[#C99A3A] hover:bg-[#b08530] text-slate-900 font-bold py-3 rounded-lg transition-colors uppercase tracking-wider flex justify-center">
-                        {loadingAuth ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-slate-900"></div> : 'Ingresar Seguro'}
+                    <div className="relative mb-6">
+                        <input
+                            type={showPassword ? 'text' : 'password'}
+                            placeholder="Contraseña"
+                            value={passwordInput}
+                            onChange={(e) => setPasswordInput(e.target.value)}
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 pr-11 text-white focus:border-[#C99A3A] focus:outline-none"
+                            required
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword(v => !v)}
+                            className="absolute right-0 top-0 h-full px-3 flex items-center text-slate-400 hover:text-[#C99A3A] transition-colors"
+                            aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                            tabIndex={-1}
+                        >
+                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
+                    </div>
+                    <button disabled={loggingIn} type="submit" className="w-full bg-[#C99A3A] hover:bg-[#b08530] text-slate-900 font-bold py-3 rounded-lg transition-colors uppercase tracking-wider flex justify-center">
+                        {loggingIn ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-slate-900"></div> : 'Ingresar Seguro'}
                     </button>
                 </form>
             </div>
