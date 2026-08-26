@@ -304,12 +304,13 @@ const Home = ({ initialProducts = [], initialSlidesRaw = [] }) => {
             <div className="fixed inset-0 pointer-events-none opacity-40 mix-blend-multiply z-0" style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/cardboard-flat.png")' }}></div>
 
             {/* Navigation - Rustic Elegant */}
-            {/* Altura del nav fija (py-3 siempre) a propósito: los elementos "sticky top-20" más
-                abajo en este archivo (menú mobile y filtro de categorías) asumen una altura de
-                header constante de 80px. Si el padding cambiara entre estado scrolleado y no
-                scrolleado, ese offset queda desactualizado y esos elementos terminan
-                superpuestos con el header. Solo el fondo/blur/sombra cambian con el scroll. */}
-            <nav className={`fixed w-full z-50 transition-all duration-300 border-b border-[#3D2B1F]/10 py-3 ${scrolled ? 'bg-[#F3E6D0]/95 backdrop-blur-md shadow-md' : 'bg-[#F3E6D0]'}`}>
+            {/* Altura fija explicita (h-20 = 80px), NO derivada de padding + contenido:
+                el hero de abajo usa mt-20 (los mismos 80px) para no quedar tapado por este nav
+                fixed. Antes la altura del nav dependia de su contenido (logo + py-3), asi que
+                podia terminar dando un pelin menos de 80px reales -> quedaba una franja de
+                fondo cream visible entre el nav y el hero. Con altura fija los dos lados usan
+                literalmente el mismo numero, no una coincidencia. */}
+            <nav className={`fixed w-full h-20 z-50 transition-all duration-300 border-b border-[#3D2B1F]/10 flex items-center ${scrolled ? 'bg-[#F3E6D0]/95 backdrop-blur-md shadow-md' : 'bg-[#F3E6D0]'}`}>
                 <div className="max-w-7xl mx-auto px-4 w-full flex justify-between items-center text-[#3D2B1F]">
 
                     {/* Logo Section */}
