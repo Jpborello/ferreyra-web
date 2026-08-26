@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useDropzone } from 'react-dropzone';
 import { Upload, X, Loader, Image as ImageIcon } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { compressImage } from '../lib/imageUpload';
 
 const ImageUpload = ({ onUpload, initialImage = '', label = 'Imagen', bucket = 'products', folder = 'promos' }) => {
     const [uploading, setUploading] = useState(false);
@@ -18,19 +19,25 @@ const ImageUpload = ({ onUpload, initialImage = '', label = 'Imagen', bucket = '
         setError(null);
 
         try {
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
-            const filePath = `${folder}/${fileName}`;
+            // Se sube ya comprimida (ver src/lib/imageUpload.js) para no
+            // acumular fotos de varios MB por cada slide que se carga. OJO:
+            // a proposito NO se borra ninguna imagen anterior desde aca —
+            // este componente sube apenas se suelta el archivo, antes de que
+            // el formulario que lo contiene se guarde de verdad. Si se
+            // borrara aca y el admin despues cancela en vez de guardar,
+            // quedaria la referencia vieja en la base apuntando a un archivo
+            // borrado. El borrado de la imagen reemplazada se hace en el
+            // guardado del formulario padre (CarouselManager.handleSave),
+            // que es el unico lugar donde se sabe que el cambio quedo firme.
+            const compressed = await compressImage(file);
+            const fileExt = compressed.name.split('.').pop();
+            const fileName = `${Math.random().toString(36).slice(2)}_${Date.now()}.${fileExt}`;
+            const filePath = folder ? `${folder}/${fileName}` : fileName;
 
-            const { error: uploadError } = await supabase.storage
-                .from(bucket)
-                .upload(filePath, file);
-
+            const { error: uploadError } = await supabase.storage.from(bucket).upload(filePath, compressed);
             if (uploadError) throw uploadError;
 
-            const { data } = supabase.storage
-                .from(bucket)
-                .getPublicUrl(filePath);
+            const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
 
             setPreview(data.publicUrl);
             onUpload(data.publicUrl);
@@ -53,6 +60,9 @@ const ImageUpload = ({ onUpload, initialImage = '', label = 'Imagen', bucket = '
 
     const clearImage = (e) => {
         e.stopPropagation();
+        // Tampoco se borra del storage aca por la misma razon de arriba:
+        // "limpiar" en el form no significa que el guardado se vaya a
+        // confirmar.
         setPreview('');
         onUpload('');
     };
@@ -82,7 +92,6 @@ const ImageUpload = ({ onUpload, initialImage = '', label = 'Imagen', bucket = '
                             alt="Preview"
                             fill
                             className="object-contain rounded"
-                            unoptimized
                         />
                         <button
                             type="button"

@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { supabase } from '../../lib/supabase';
+import { uploadImageAndReplace } from '../../lib/imageUpload';
 import {
     LayoutGrid, DollarSign, TrendingUp, Truck, MapPin, Search,
     Package, ArrowRight, MessageCircle, AlertCircle, ShoppingBag,
@@ -210,23 +211,16 @@ const Admin = () => {
             let imageUrl = editingProduct.image_url;
 
             // 1. Upload Image if changed
+            // uploadImageAndReplace comprime la foto antes de subirla y, si
+            // el guardado sigue de largo (estamos en el submit del form, no
+            // apenas se elige el archivo), borra la imagen anterior del
+            // storage para no dejarla huerfana.
             if (editingProduct.file) {
-                const file = editingProduct.file;
-                const fileExt = file.name.split('.').pop();
-                const fileName = `${Date.now()}.${fileExt}`;
-                const filePath = `${fileName}`;
-
-                const { error: uploadError } = await supabase.storage
-                    .from('products')
-                    .upload(filePath, file);
-
-                if (uploadError) throw uploadError;
-
-                const { data: { publicUrl } } = supabase.storage
-                    .from('products')
-                    .getPublicUrl(filePath);
-
-                imageUrl = publicUrl;
+                imageUrl = await uploadImageAndReplace({
+                    bucket: 'products',
+                    file: editingProduct.file,
+                    previousUrl: editingProduct.image_url,
+                });
             }
 
             // 2. Prepare Data
@@ -951,7 +945,7 @@ const Admin = () => {
                                                     src={editingProduct.file ? URL.createObjectURL(editingProduct.file) : (typeof editingProduct.image_url === 'string' ? editingProduct.image_url.trim() : "/placeholder.webp")}
                                                     alt="Preview"
                                                     fill
-                                                    unoptimized
+                                                    unoptimized={!!editingProduct.file}
                                                     className="object-cover"
                                                 />
                                             </div>

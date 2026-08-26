@@ -5,11 +5,16 @@ import { supabase } from '../lib/supabase';
 import { Trash2, Plus, Save, ToggleLeft, ToggleRight, ArrowUp, ArrowDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ImageUpload from './ImageUpload';
+import ConfirmDialog from './ConfirmDialog';
+import { deleteStorageImage } from '../lib/imageUpload';
 
 const CarouselManager = ({ showToast }) => {
     const [slides, setSlides] = useState([]);
     const [loading, setLoading] = useState(true);
     const [editingId, setEditingId] = useState(null);
+    // id del slide pendiente de confirmar borrado (o null). Reemplaza al
+    // confirm() nativo del navegador.
+    const [confirmDeleteId, setConfirmDeleteId] = useState(null);
     const [formData, setFormData] = useState({
         image_url: '',
         title: '',
@@ -45,7 +50,16 @@ const CarouselManager = ({ showToast }) => {
         e.preventDefault();
         try {
             // Fix: Check if it's a new slide (editingId === 'new') or an update
-            if (editingId && editingId !== 'new') {
+            const isUpdate = editingId && editingId !== 'new';
+            // La imagen que tenia el slide ANTES de este guardado (segun el
+            // ultimo fetch), para poder borrarla del storage si se
+            // reemplazo — pero recien despues de que el guardado salga
+            // bien. Si se borrara apenas se sube la nueva (en ImageUpload)
+            // y despues el admin cancela, quedaria la base apuntando a un
+            // archivo ya borrado.
+            const previousImageUrl = isUpdate ? slides.find(s => s.id === editingId)?.image_url : null;
+
+            if (isUpdate) {
                 const { error } = await supabase
                     .from('slides')
                     .update(formData)
@@ -58,6 +72,10 @@ const CarouselManager = ({ showToast }) => {
                 if (error) throw error;
             }
 
+            if (previousImageUrl && previousImageUrl !== formData.image_url) {
+                deleteStorageImage('products', previousImageUrl);
+            }
+
             setEditingId(null);
             resetForm();
             fetchSlides();
@@ -67,11 +85,19 @@ const CarouselManager = ({ showToast }) => {
         }
     };
 
-    const handleDelete = async (id) => {
-        if (!confirm('¿Seguro que querés eliminar este slide?')) return;
+    const handleDelete = (id) => {
+        setConfirmDeleteId(id);
+    };
+
+    const performDelete = async (id) => {
+        setConfirmDeleteId(null);
         try {
+            const slideToDelete = slides.find(s => s.id === id);
             const { error } = await supabase.from('slides').delete().eq('id', id);
             if (error) throw error;
+            // Recien borramos la imagen del storage despues de confirmar que
+            // el registro se borro bien.
+            if (slideToDelete?.image_url) deleteStorageImage('products', slideToDelete.image_url);
             fetchSlides();
             showToast?.('Slide eliminado', 'success');
         } catch (error) {
@@ -275,6 +301,16 @@ const CarouselManager = ({ showToast }) => {
                     <div className="text-center py-8 text-gray-500 italic">No hay slides cargados.</div>
                 )}
             </div>
+
+            <ConfirmDialog
+                open={!!confirmDeleteId}
+                title="Eliminar slide"
+                message="¿Seguro que querés eliminar este slide? También se borra su imagen."
+                confirmLabel="Eliminar"
+                danger
+                onConfirm={() => performDelete(confirmDeleteId)}
+                onCancel={() => setConfirmDeleteId(null)}
+            />
         </div>
     );
 };

@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { Ticket, Plus, Trophy, Archive, AlertCircle, History } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Confetti from 'react-confetti';
+import ConfirmDialog from './ConfirmDialog';
 
 const RaffleManager = ({ showToast }) => {
     const [raffles, setRaffles] = useState([]);
@@ -11,6 +12,8 @@ const RaffleManager = ({ showToast }) => {
     const [loading, setLoading] = useState(true);
     const [selectedRaffle, setSelectedRaffle] = useState(null);
     const [showCreateModal, setShowCreateModal] = useState(false);
+    // 'draw' | 'archive' | null. Reemplaza los confirm() nativos del navegador.
+    const [pendingConfirm, setPendingConfirm] = useState(null);
 
     // Animation/Winner State
     const [isDrawing, setIsDrawing] = useState(false);
@@ -70,13 +73,15 @@ const RaffleManager = ({ showToast }) => {
         }
     };
 
-    const drawWinner = async () => {
+    const handleDrawClick = () => {
         if (tickets.length === 0) {
             showToast?.('No hay tickets para sortear.', 'error');
             return;
         }
-        if (!confirm('¿Iniciar sorteo?')) return;
+        setPendingConfirm('draw');
+    };
 
+    const drawWinner = async () => {
         setIsDrawing(true);
         setWinner(null);
 
@@ -121,8 +126,9 @@ const RaffleManager = ({ showToast }) => {
         }, 3000);
     };
 
+    const handleArchiveClick = () => setPendingConfirm('archive');
+
     const archiveRaffle = async () => {
-        if (!confirm('¿Archivar este sorteo? Ya no se verán los tickets en la lista principal.')) return;
         const { error } = await supabase.from('raffles').update({ status: 'archived' }).eq('id', selectedRaffle.id);
         if (error) {
             console.error('Error archivando sorteo:', error);
@@ -197,7 +203,7 @@ const RaffleManager = ({ showToast }) => {
                                     </div>
                                 </div>
                                 {selectedRaffle.status === 'completed' && (
-                                    <button onClick={archiveRaffle} className="text-slate-500 hover:text-slate-300 text-xs flex items-center gap-1">
+                                    <button onClick={handleArchiveClick} className="text-slate-500 hover:text-slate-300 text-xs flex items-center gap-1">
                                         <Archive size={14} /> Archivar Sorteo
                                     </button>
                                 )}
@@ -230,7 +236,7 @@ const RaffleManager = ({ showToast }) => {
                                     <div className="text-center">
                                         {selectedRaffle.status === 'active' ? (
                                             <button
-                                                onClick={drawWinner}
+                                                onClick={handleDrawClick}
                                                 disabled={tickets.length === 0}
                                                 className="group relative bg-[#C99A3A] hover:bg-[#F3E6D0] text-[#3D2B1F] px-12 py-6 rounded-full font-black text-2xl uppercase tracking-widest shadow-[0_0_40px_rgba(201,154,58,0.3)] hover:shadow-[0_0_60px_rgba(201,154,58,0.6)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
@@ -294,6 +300,24 @@ const RaffleManager = ({ showToast }) => {
                     </div>
                 )}
             </AnimatePresence>
+
+            <ConfirmDialog
+                open={!!pendingConfirm}
+                title={pendingConfirm === 'draw' ? 'Iniciar sorteo' : 'Archivar sorteo'}
+                message={
+                    pendingConfirm === 'draw'
+                        ? '¿Iniciar sorteo? Se va a elegir un ganador entre todos los tickets cargados.'
+                        : '¿Archivar este sorteo? Ya no se van a ver los tickets en la lista principal.'
+                }
+                confirmLabel={pendingConfirm === 'draw' ? 'Sortear' : 'Archivar'}
+                onConfirm={() => {
+                    const action = pendingConfirm;
+                    setPendingConfirm(null);
+                    if (action === 'draw') drawWinner();
+                    else if (action === 'archive') archiveRaffle();
+                }}
+                onCancel={() => setPendingConfirm(null)}
+            />
         </div>
     );
 };
