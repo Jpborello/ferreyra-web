@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { supabase } from '../lib/supabase';
-import { ShoppingBag, Phone, MapPin, Truck, Award, Search, Menu, X, ChevronRight, Star, ArrowRight, User, Lock, CheckCircle } from 'lucide-react';
+import { ShoppingBag, Phone, MapPin, Truck, Award, Search, Menu, X, ChevronRight, Star, ArrowRight, Lock, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import FeaturedCarousel from '../components/FeaturedCarousel';
 import CollaborationSection from '../components/CollaborationSection';
@@ -343,8 +343,8 @@ const Home = ({ initialProducts = [], initialSlidesRaw = [] }) => {
                             onClick={handleOrderClick}
                             className="bg-[#3D2B1F] hover:bg-[#C99A3A] text-[#F3E6D0] hover:text-[#3D2B1F] px-6 py-2 rounded-sm text-sm font-bold tracking-widest uppercase transition-all flex items-center gap-2 border border-[#3D2B1F] touch-manipulation"
                         >
-                            <User size={16} />
-                            {cartCount > 0 ? `Ver Pedido (${cartCount})` : 'Ingresar'}
+                            <ShoppingBag size={16} />
+                            {cartCount > 0 ? `Ver Pedido (${cartCount})` : 'Mi Pedido'}
                         </button>
                     </div>
 
@@ -355,7 +355,7 @@ const Home = ({ initialProducts = [], initialSlidesRaw = [] }) => {
                             onClick={handleOrderClick}
                             className="text-[#3D2B1F] relative p-2 touch-manipulation"
                         >
-                            <User size={24} />
+                            <ShoppingBag size={24} />
                             {cartCount > 0 && (
                                 <span className="absolute top-0 right-0 bg-[#C99A3A] text-[#3D2B1F] text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
                                     {cartCount}
@@ -385,7 +385,7 @@ const Home = ({ initialProducts = [], initialSlidesRaw = [] }) => {
                             <a onClick={() => setMobileMenuOpen(false)} href="#story" className="font-serif font-bold text-[#3D2B1F] uppercase tracking-widest py-3 border-b border-[#3D2B1F]/10">Historia</a>
                             <a onClick={() => setMobileMenuOpen(false)} href="#catalog" className="font-serif font-bold text-[#3D2B1F] uppercase tracking-widest py-3 border-b border-[#3D2B1F]/10">Productos</a>
                             <button onClick={handleOrderClick} className="bg-[#3D2B1F] text-[#F3E6D0] py-4 uppercase font-bold tracking-widest mt-2 w-full">
-                                {cartCount > 0 ? `Ver Pedido (${cartCount})` : 'Ingresar'}
+                                {cartCount > 0 ? `Ver Pedido (${cartCount})` : 'Mi Pedido'}
                             </button>
                         </div>
                     </motion.div>
